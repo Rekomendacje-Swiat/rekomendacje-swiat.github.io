@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Radar rekomendacji BUY</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+/* Układ: nagłówek z podsumowaniem, pasek filtrów, jedna gęsta tabela sortowana po ocenie, metodologia na dole */
+:root{
+  --bg:#f3f6f4; --surface:#ffffff; --fg:#13201c; --muted:#5b6a65; --line:#d7dfdb; --soft:#e9eeeb;
+  --accent:#0b6e5f; --accent-ink:#ffffff;
+  --good:#1a7f4b; --warn:#a86a12; --bad:#b3372f;
+  --good-bg:#dcf1e4; --warn-bg:#f6e8cb; --bad-bg:#f7dcd9;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0e1513; --surface:#151f1c; --fg:#e5eeeb; --muted:#93a49e; --line:#27342f; --soft:#1c2925;
+  --accent:#4fc3ac; --accent-ink:#06211c;
+  --good:#63d093; --warn:#e3b24d; --bad:#f08075;
+  --good-bg:#153324; --warn-bg:#3a2e12; --bad-bg:#3d1c19; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#0e1513; --surface:#151f1c; --fg:#e5eeeb; --muted:#93a49e; --line:#27342f; --soft:#1c2925;
+  --accent:#4fc3ac; --accent-ink:#06211c;
+  --good:#63d093; --warn:#e3b24d; --bad:#f08075;
+  --good-bg:#153324; --warn-bg:#3a2e12; --bad-bg:#3d1c19; color-scheme:dark }
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.45}
+.wrap{max-width:1280px;margin:0 auto;padding-inline:16px;padding-block:24px 48px;display:flex;flex-direction:column;gap:20px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,38px);line-height:1.05;margin:0;letter-spacing:-.01em;text-wrap:balance}
+h2{font-family:var(--display);font-weight:700;font-size:18px;margin:0 0 8px}
+.sub{color:var(--muted);max-width:68ch;margin:6px 0 0}
+.head{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between}
+.stats{display:flex;flex-wrap:wrap;gap:8px 28px}
+.stat{display:flex;flex-direction:column;min-width:0}
+.stat b{font-family:var(--mono);font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.bar{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.bar label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);display:flex;flex-direction:column;gap:3px}
+.bar input[type=search],.bar select{font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:0}
+.bar input[type=search]{width:150px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:inherit;font-size:12px;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:999px;padding:4px 10px;cursor:pointer}
+.chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.chip:focus-visible,.bar input:focus-visible,.bar select:focus-visible,th button:focus-visible,tr.row:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.count{margin-left:auto;color:var(--muted);font-family:var(--mono);font-size:12px}
+.tablebox{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow-x:auto;min-width:0}
+table{border-collapse:collapse;width:100%;min-width:1000px;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:var(--soft);text-align:right;font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding:0;border-bottom:1px solid var(--line);white-space:nowrap}
+th:nth-child(-n+2){text-align:left}
+th button{all:unset;cursor:pointer;display:block;padding:9px 6px;width:100%;box-sizing:border-box}
+th button[aria-sort=descending]::after{content:" ▼";color:var(--accent)}
+th button[aria-sort=ascending]::after{content:" ▲";color:var(--accent)}
+td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:right;font-family:var(--mono);font-size:13px;white-space:nowrap;vertical-align:middle}
+td:nth-child(-n+2){text-align:left}
+tr.row{cursor:pointer}
+tr.row:hover td{background:var(--soft)}
+.rank{color:var(--muted);width:36px}
+.tk{font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.01em}
+.tk small{display:block;font-family:var(--body);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:0}
+.cur{color:var(--muted);font-size:11px;margin-left:3px}
+.up{display:inline-flex;align-items:center;gap:8px;justify-content:flex-end}
+.meter{width:36px;height:6px;background:var(--soft);border-radius:3px;position:relative;overflow:hidden}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--good);border-radius:3px}
+.meter i.neg{background:var(--bad)}
+.pos{color:var(--good)} .neg{color:var(--bad)} .mut{color:var(--muted)}
+.bhs{display:inline-flex;height:6px;width:36px;border-radius:3px;overflow:hidden;background:var(--soft);vertical-align:middle;margin-left:6px}
+.bhs i{display:block;height:100%}.bhs .b{background:var(--good)}.bhs .h{background:var(--warn)}.bhs .s{background:var(--bad)}
+.tier{display:inline-flex;gap:2px;margin-left:6px;vertical-align:middle}
+.tier i{width:6px;height:12px;border-radius:1px;background:var(--line)}
+.tier i.t3{background:var(--accent)}.tier i.t2{background:var(--accent);opacity:.55}.tier i.t1{background:var(--accent);opacity:.25}
+.trend{display:inline-flex;align-items:center;gap:6px;border-radius:4px;padding:2px 7px;font-size:12px;font-weight:600}
+.trend.u{background:var(--good-bg);color:var(--good)}.trend.d{background:var(--bad-bg);color:var(--bad)}.trend.s{background:var(--soft);color:var(--muted)}
+.score{display:inline-block;min-width:38px;text-align:center;border-radius:4px;padding:3px 6px;font-weight:600;font-size:14px}
+.score.a{background:var(--good-bg);color:var(--good)}.score.b{background:var(--warn-bg);color:var(--warn)}.score.c{background:var(--bad-bg);color:var(--bad)}.score.n{background:var(--soft);color:var(--muted)}
+.flag{font-family:var(--body);font-size:10px;letter-spacing:.04em;text-transform:uppercase;border:1px solid var(--warn);color:var(--warn);border-radius:3px;padding:0 4px;margin-left:6px}
+tr.detail td{background:var(--bg);text-align:left;white-space:normal;font-family:var(--body);padding:12px 14px 16px 56px}
+.dgrid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:18px 32px}
+@media (max-width:760px){.dgrid{grid-template-columns:minmax(0,1fr)} tr.detail td{padding-left:14px}
+  .dwrap{position:sticky;left:14px;max-width:calc(100vw - 92px)}
+  .dwrap .recs{grid-template-columns:auto max-content auto auto auto max-content;overflow-x:auto;padding-bottom:4px}}
+.dgrid h3{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
+.recs{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto auto auto;gap:3px 12px;font-family:var(--mono);font-size:12.5px;align-items:baseline}
+.recs span{white-space:nowrap}
+.parts{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 12px;font-size:13px}
+.parts b{font-family:var(--mono);font-weight:600}
+.recs a,.note a{color:var(--accent);text-decoration:underline;text-underline-offset:2px}
+.chg{font-weight:400;font-size:11.5px;margin-left:6px}
+.tk small.nm{font-size:12px;color:var(--fg);opacity:.8;max-width:210px;overflow:hidden;text-overflow:ellipsis}
+.note{color:var(--muted);font-size:12.5px;margin:8px 0 0}
+.method{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px 32px}
+.method p,.method li{max-width:65ch;margin:0 0 8px;color:var(--fg)}
+.method ul{margin:0;padding-left:18px}
+.method code{font-family:var(--mono);font-size:12.5px;background:var(--soft);padding:1px 4px;border-radius:3px}
+.zm{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+@media (min-width:1000px){.zm{grid-template-columns:1fr 1fr 1.6fr 1.6fr}}
+.zm:empty{display:none}
+.zm .zh{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline}
+.zm .zh h2{margin:0}
+.zm .zh span{color:var(--muted);font-size:13px}
+.zc{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-width:0}
+.zc h3{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 0 6px;font-weight:600}
+.zc ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:3px}
+.zc li{display:flex;justify-content:space-between;gap:8px;font-size:13px;min-width:0}
+.zc li button{all:unset;cursor:pointer;font-family:var(--display);font-weight:700;letter-spacing:.01em}
+.zc li button:hover,.zc li button:focus-visible{text-decoration:underline;outline:none}
+.zc li span{font-family:var(--mono);font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zc p{margin:0;font-size:13px;color:var(--muted)}
+.empty{padding:28px;text-align:center;color:var(--muted);font-family:var(--body)}
+</style>
+
+<div class="wrap">
+  <header class="head">
+    <div>
+      <h1>Radar rekomendacji BUY</h1>
+      <p class="sub">Rekomendacje analityków dla 241 spółek z listy BUY. Liczą się rekomendacje z ostatnich 60 dni, czyli od 21 sierpnia 2026 do 20 października 2026. Dane z 20 października 2026, aktualizacja co tydzień w sobotę. Kliknij wiersz, żeby zobaczyć domy maklerskie, źródła i rozbicie oceny.</p>
+    </div>
+    <div class="stats" id="stats"></div>
+  </header>
+
+  <section class="zm" id="zm" aria-label="Zmiany od poprzedniej aktualizacji"></section>
+
+  <div class="bar">
+    <label for="q">Ticker lub nazwa<input id="q" type="search" placeholder="np. NVDA" autocomplete="off"></label>
+    <label for="minn">Min. liczba domów
+      <select id="minn"><option value="0">dowolna</option><option value="3">3 i więcej</option><option value="5">5 i więcej</option><option value="10">10 i więcej</option><option value="15">15 i więcej</option></select></label>
+    <label for="tr">Trend
+      <select id="tr"><option value="">każdy</option><option value="u">rosnący</option><option value="s">stabilny</option><option value="d">spadający</option></select></label>
+    <div class="chips" id="chips" role="group" aria-label="Sekcja listy"></div>
+    <span class="count" id="count"></span>
+  </div>
+
+  <div class="tablebox">
+    <table>
+      <thead><tr id="hrow"></tr></thead>
+      <tbody id="tb"></tbody>
+    </table>
+  </div>
+
+  <section>
+    <h2>Jak czytać ocenę</h2>
+    <div class="method">
+      <div>
+        <p>Ocena ma skalę od 0 do 100 i składa się z czterech części.</p>
+        <ul>
+          <li><b>Potencjał wzrostu, do 35 pkt.</b> Biorę średnią cenę docelową ważoną jakością domu i porównuję z kursem. Minus 20% daje zero, plus 60% daje maksimum. Przy słabym pokryciu ta część jest obcinana nawet o 60%.</li>
+          <li><b>Rekomendacje, do 20 pkt.</b> Kupuj liczy się jako +1, trzymaj jako 0, sprzedaj jako −1. Średnia jest ważona jakością domu. Przy słabym pokryciu ta część maleje nawet o połowę.</li>
+          <li><b>Trend, do 20 pkt.</b> Podwyżka ceny docelowej to +1, obniżka to −1. Zmiana rekomendacji liczy się półtora raza mocniej. Podtrzymanie bez zmiany to 0. Trend to średnia ze wszystkich zdarzeń w oknie, więc podtrzymania go rozcieńczają. Brak zmian daje 10 pkt.</li>
+          <li><b>Liczba i jakość, do 25 pkt.</b> Sumuję wagi wszystkich domów. Około dwunastu największych banków daje maksimum.</li>
+        </ul>
+      </div>
+      <div>
+        <p><b>Jakość domu maklerskiego</b> ma trzy poziomy. Największe banki globalne (Goldman Sachs, Morgan Stanley, JPMorgan, UBS i podobne) mają wagę 1,0. Średnie domy z ugruntowaną pozycją (Piper Sandler, Stifel, Berenberg, Warburg) mają 0,7. Małe butiki (H.C. Wainwright, Maxim, Roth) mają 0,4. Dom spoza słownika dostaje 0,55. Gwiazdki trafności zmieniają wagę o maksymalnie 20%. Pierwszeństwo mają gwiazdki analityka z TipRanks, potem gwiazdki domu z MarketBeat. Kolumna Jakość pokazuje średnią wagę domów w skali 0 do 100.</p>
+        <p><b>Średnia cena docelowa</b> w tabeli to zwykła średnia z ostatnich cen każdego domu w oknie 60 dni. Jeden dom liczy się raz, nawet jeśli wypowiadał się kilka razy.</p>
+        <p><b>Zmiana ceny docelowej</b> przy trendzie to średnia procentowa zmiana cen docelowych w oknie. Liczę ją tylko z rekomendacji, które podają starą i nową cenę.</p><p><b>Znacznik 90 dni</b> oznacza, że spółka nie miała w 60 dniach żadnej rekomendacji z ceną docelową, więc ocena bierze wszystkie rekomendacje z 90 dni. Jedna cena docelowa z ostatnich 60 dni wystarcza, żeby zostać przy oknie 60 dni, nawet gdy starszych rekomendacji jest dużo więcej. Dlatego ocena spółki potrafi spaść, gdy dojdzie jedna świeża nota małego domu.</p><p><b>Spółki z Toronto</b> (RBA i STN) mają kurs z TSX w dolarach kanadyjskich. Ceny docelowe podane w CAD biorę wprost. Ceny w USD przeliczam po bieżącym kursie USD/CAD z TradingView (1,405) i oznaczam w szczegółach.</p><p><b>Zmiana oceny</b> to różnica punktów wobec poprzedniej aktualizacji. Pasek nad tabelą pokazuje największe ruchy, zmiany rekomendacji od poprzedniej aktualizacji i zmiany składu listy. Punkt odniesienia z 3.10.2026 przeliczyłem obecnym silnikiem na tych samych danych, więc zmiana pokazuje ruch rekomendacji i kursów, a nie zmianę metody.</p>
+      </div>
+      <div>
+        <p><b>Źródła.</b> Spółki z USA i Toronto: MarketBeat i StockAnalysis, odczytywane co tydzień i połączone bez powtórek. Spółki europejskie: depesze dpa-AFX i Dow Jones z kanału wiadomości TradingView, odczytywane programem z nagłówka. Tam, gdzie TradingView nie ma depesz (Prosus, Xiaomi, AAK, Stellantis, Buzzi, Vonovia, LEG), uzupełnia je wyszukiwarka z odnośnikiem do źródła. Z bazy z 3.10.2026 zostały rekordy europejskie oraz rekordy z TipRanks i depesz. Rekordy MarketBeat i StockAnalysis dla USA pobrałem od nowa za 90 dni, bo import miał przesunięte daty. Kursy, konsensus 12-miesięczny, liczba analityków i zakres cen docelowych do kontroli: TradingView.</p>
+        <p><b>Kontrola danych.</b> Każda cena docelowa musi mieścić się w zakresie cen docelowych z TradingView, od 80% najniższej do 125% najwyższej. Rekord spoza zakresu albo w innej walucie niż kurs nie wchodzi do oceny, dopóki nie sprawdzę go w źródle. Gdy MarketBeat i StockAnalysis podają dla tego samego domu i dnia inną cenę albo inną rekomendację, rekord nie wchodzi do oceny, dopóki nie rozstrzygnę go w trzecim źródle. To samo zdarzenie podane przez dwa źródła z datami różnymi o kilka dni liczę raz. Co tydzień losowo sprawdzam też 10 rekordów w źródle.</p>
+        <p><b>Ograniczenia.</b> Odnośniki MarketBeat i StockAnalysis prowadzą do strony spółki, a nie do pojedynczej rekomendacji. StockAnalysis pokazuje bez opłaty tylko 8 najnowszych wpisów. Oceny automatyczne (Weiss, Zacks, Wall Street Zen) są pominięte. Dla Europy brakuje domów, których nie relacjonują depesze, więc liczba rekomendacji jest tam zaniżona. Szczegóły spółki pokazują, ilu analityków liczy dla niej TradingView. Część podtrzymań nie zawiera ceny docelowej.</p>
+        <p class="note">Zestawienie ma charakter informacyjny i nie jest poradą inwestycyjną.</p>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="text/plain" id="raw">
+META,NASDAQ,TOP,USD,692.62,34,38,14,15,5,31,860,854,580,1000,46,20,3,28,5,0,100,85,77,0,817,14.0,23,80,4.0,3,69.0,1015/Citi/B/895/u/M/4;1020/BMO/H/580/r/S/;1020/Bernstein/B/800/r/S/;1019/Morgan Stanley/B/820/u/MS/3;1016/Bank of America/B/810/r/MS/;1016/Deutsche Bank/B/820/u/MS/
+SPCX,NASDAQ,TOP,USD,146.68,24,28,12,10,2,17,218,223,100,300,13,6,2,20,3,1,100,82,86,0,228,10.5,6,83,2.7,10,46.0,1019/Bernstein/B/248/r/MS/;1019/Deutsche Bank/B/235/r/MS/;1016/Evercore/B/275/u/MS/3;1012/Morgan Stanley/B/300/r/MS/;1009/Barclays/B/254/u/M/;1009/JPMorgan/B//r/MS/
+GEV,NYSE,TOP,USD,897,11,11,8,2,1,10,1187,1228,470,1450,-8,2,4,9,1,1,94,82,74,0,1199,-2.6,4,91,4.5,7,40.0,1012/Citi/H/1125/r/S/;1009/JPMorgan/B/1150/d/MS/;1009/RBC/B/1225/r/S/;1001/Evercore/B/1350/r/MS/;0917/Jefferies/B/1185/d/MS/;0917/Morgan Stanley/B/1350/r/S/
+DELL,NYSE,TOP,USD,462.96,23,25,14,7,2,20,605,602,480,735,51,14,1,16,6,0,100,72,79,0,600,15.3,15,87,3.0,8,34.0,1014/Barclays/H/574/d/M/3;1009/Goldman Sachs/B/570/r/MS/3;1006/Mizuho/B/650/u/M/3;0929/TD Cowen/H/550/u/MS/;0921/Morgan Stanley/H/511/u/MS/;0918/Daiwa/B/625/u/M/
+MU,NASDAQ,TOP,USD,909.99,28,29,15,11,2,23,1589,1573,621,3000,14,5,1,25,0,1,100,95,91,0,1606,14.8,5,85,3.5,8,57.0,1015/Bank of America/B/1550/r/S/;1006/JPMorgan/B/1540/r/S/;1002/Barclays/B/2000/r/S/;1002/CLSA/B/1700/r/M/;1001/BMO/B//r/M/;1001/Bernstein/B//r/M/
+UBER,NYSE,TOP,USD,68.83,16,19,8,8,0,13,99.77,100,74,125,0,1,1,14,1,0,100,95,83,0,101,3.4,1,87,5.0,-3,54.0,1013/Goldman Sachs/B/110/r/S/;1012/Bernstein/B/95/r/MS/;1007/Bank of America/B/101/r/S/;1007/Citi/B//r/M/;1007/Scotiabank/B/100/r/MS/;1005/Wells Fargo/B/92/u/MS/
+BABA,NYSE,TOP,USD,108.56,12,14,8,4,0,11,188,189,160,207,13,5,3,11,1,0,97,94,89,0,188,0.4,7,91,3.3,11,46.0,1008/Citi/B/193/u/MS/4;1012/JPMorgan/B/200/d/MS/3;1009/Bank of America/B/178/u/S/;1009/Barclays/B/200/u/MS/;1008/Jefferies/B/192/r/M/3;1008/Morgan Stanley/B/180/r/S/
+PLTR,NASDAQ,TOP,USD,194.5,11,12,4,5,2,9,242,244,215,265,58,6,1,10,1,0,88,95,74,0,209,19.4,4,77,3.3,10,36.0,1015/Mizuho/B/245/u/MS/3;1009/Barclays/B/265/r/MS/;1008/Goldman Sachs/B/230/u/MS/;0915/UBS/B/250/u/M/;1012/Baird/B/250/u/MS/3;1008/Raymond James/B//u/M/
+ORCL,NYSE,TOP,USD,132.54,28,30,14,12,2,23,239,240,110,400,0,7,7,22,4,1,100,80,88,0,243,-1.7,14,84,4.0,0,45.0,1002/Citi/B//r/M/4;1012/RBC/H/165/d/MS/;0925/Bernstein/B/325/r/MS/;0924/Evercore/B//r/S/;0918/Wells Fargo/B/280/r/S/;0914/Goldman Sachs/B/240/u/M/
+NVDA,NASDAQ,TOP,USD,216.77,36,38,16,17,3,31,331,330,210,515,46,19,1,29,0,0,100,100,91,0,334,10.3,19,82,4.0,4,72.0,1009/UBS/B/300/r/MS/4;1006/Citi/B/315/u/MS/;1005/BNP Paribas/B/345/u/MS/;1002/Morgan Stanley/B/300/r/MS/;1002/Wells Fargo//210/r/M/;1001/Barclays/B/275/r/S/
+ASML,NASDAQ,TOP,USD,1633.97,9,12,7,2,0,6,2546,2545,2100,2815,-12,1,2,8,1,0,88,88,79,0,2383,16.0,3,96,3.7,7,45.0,1014/Bank of America/B/2815/d/ST/4.1;1015/Citi/B//r/M/4;1016/Bernstein/B/2807/r/S/;1015/JPMorgan/B/2350/d/MS/3;1015/RBC/B/2100/r/MS/;0930/Jefferies/H//r/M/
+CRM,NYSE,TOP,USD,239.07,34,40,16,15,3,24,285,284,225,315,20,12,2,27,4,1,100,80,72,0,285,17.6,11,82,2.7,-4,60.0,1012/Bank of America/B/285/u/MS/;1012/Barclays/B/276/d/MS/;1012/Deutsche Bank/B//r/M/;1012/Evercore/B//r/M/3;1012/RBC/H/250/r/MS/;1012/TD Cowen/B/300/r/MS/
+TSLA,NASDAQ,TOP,USD,373.66,18,23,11,4,3,11,401,386,157,550,26,6,2,8,7,3,100,27,60,0,383,1.2,4,85,4.0,9,49.0,1019/Barclays/B/370/u/MS/3;1016/JPMorgan/H/415/d/MS/;1016/Morgan Stanley/H/400/r/MS/;1012/Jefferies/H/400/u/MS/;1012/RBC/B/480/r/MS/;1007/UBS/H/391/u/MS/
+COIN,NASDAQ,TOP,USD,170.68,15,15,6,8,1,13,217,217,149,280,35,7,2,8,6,1,100,46,74,0,212,19.7,8,81,3.7,23,42.0,1013/Citi/B/230/u/M/4;1009/Morgan Stanley/H/258/u/MS/3;1007/Barclays/S/149/u/MS/;1007/Goldman Sachs/B/244/u/MS/;1005/Bank of America/B/203/u/MS/;1002/Wells Fargo/H/200/d/M/
+AVGO,NASDAQ,TOP,USD,335.44,27,28,15,9,3,23,529,532,350,715,27,15,7,26,1,0,100,97,92,0,529,4.8,18,84,2.5,4,53.0,1002/UBS/B/470/d/MS/;0921/Bernstein/B/575/r/MS/3;0915/Mizuho/B/530/r/S/;0904/BNP Paribas/B/715/u/M/;0904/Citi/B/515/u/MS/;0903/BMO/B/575/u/M/
+HOOD,NASDAQ,TOP,USD,98.68,25,26,12,11,2,21,141,141,115,170,48,15,2,21,3,0,100,88,86,0,138,7.5,16,82,2.5,8,36.0,1014/Wells Fargo/H/120/d/MS/3;1012/Evercore/B/130/r/MS/;1009/Citi/B//r/M/;1009/Morgan Stanley/B/160/u/MS/;1007/Barclays/B/132/u/MS/;1005/Bank of America/B/156/u/MS/
+GOOG,NASDAQ,TOP,USD,337.61,15,15,7,7,1,12,430,428,370,485,36,6,1,12,1,0,100,91,78,0,427,3.7,7,82,2.5,9,71.0,1015/JPMorgan/B/425/u/MS/3;1014/UBS/H/380/u/MS/;1009/Citi/B//r/M/;1008/TD Cowen/B/485/u/MS/;1006/Wells Fargo/B/417/r/M/;1001/Bank of America/B//r/S/
+RIVN,NASDAQ,TOP,USD,12.33,7,7,4,2,1,6,17.5,17.03,14,22,-17,0,1,2,3,2,76,-12,57,0,18.61,-11.1,1,87,5.0,6,27.0,1003/JPMorgan/S/15/r/S/;1003/Morgan Stanley/S/14/r/S/;1002/Goldman Sachs/H/16/d/S/;0914/Citi/H/18/r/MS/;0928/Cantor Fitzgeral/H//r/M/5;0824/Stifel/B/22/r/MS/
+SOFI,NASDAQ,TOP,USD,14.84,9,9,3,5,1,6,20,19.73,15,25,-12,2,3,4,4,1,81,32,62,0,20.15,-7.6,3,78,3.0,-3,29.0,1013/Goldman Sachs/H/15/d/MS/3;1006/TD Cowen/H/18/d/MS/;0902/Scotiabank/B/25/r/MS/;1012/Benchmark/B//u/M/;1012/KBW/S/15/d/MS/3;0910/William Blair/B//r/S/
+APP,NASDAQ,TOP,USD,275.56,13,14,8,5,0,12,430,426,325,560,-73,0,10,9,4,0,99,68,76,0,478,-14.4,10,89,3.5,-3,39.0,1019/Citi/B/500/d/MS/4;1014/Goldman Sachs/H/400/d/MS/3;1013/Morgan Stanley/B/400/d/MS/;1012/Wells Fargo/H/325/r/S/;1009/Bank of America/H/325/d/S/;1008/Jefferies/B/375/d/M/
+AAPL,NASDAQ,TOP,USD,340.56,19,26,10,7,2,14,334,337,264,400,2,4,3,9,8,2,100,44,58,0,336,1.0,7,83,2.5,-4,46.0,1020/UBS/H/296/r/MS/;1019/Bank of America/B/370/r/MS/;1019/Jefferies/S/264/r/MS/;1016/Evercore/B/380/u/MS/;1012/JPMorgan/B/360/u/MS/3;1001/Morgan Stanley/B/355/d/M/
+MELI,NASDAQ,TOP,USD,1854.04,8,9,4,4,0,7,2290,2280,2100,2500,-13,2,3,6,2,0,82,70,61,0,2297,0.4,5,89,4.3,-2,28.0,1013/Citi/H/2100/r/MS/4;1005/Bank of America/B/2400/r/S/;1001/Goldman Sachs/B/2230/d/S/;0922/JPMorgan/H//r/S/;1012/Cantor Fitzgeral/B/2200/d/M/5;1006/Susquehanna/B/2500/u/MS/4
+NFLX,NASDAQ,TOP,USD,69.83,21,21,12,5,4,18,86,86.67,57,125,-27,4,9,13,6,2,100,55,67,0,91,-6.8,12,84,4.3,1,55.0,1016/BMO/B/125/d/MS/3;1015/Citi/H//r/M/;1015/Jefferies/B/85/r/MS/;1008/Morgan Stanley/B/80/d/MS/;1007/Barclays/H/70/d/M/;1006/Goldman Sachs/B/90/r/M/
+MSFT,NASDAQ,TOP,USD,531.07,32,34,18,12,2,22,614,618,440,725,34,16,5,27,3,1,100,87,73,0,596,13.5,14,86,3.3,2,59.0,1015/Citi/B/636/u/M/4;1019/Bernstein/B/662/u/MS/3;1019/Morgan Stanley/B/600/d/MS/;1016/Goldman Sachs/B/640/r/S/;1015/Mizuho/B/600/u/MS/3;1015/RBC/B/640/r/MS/
+AMZN,NASDAQ,TOP,USD,263.01,15,16,9,4,2,14,330,329,200,385,10,4,2,14,0,0,100,100,76,0,333,6.8,6,85,2.5,17,71.0,1020/BMO/B/380/r/S/;1019/Morgan Stanley/B/350/u/MS/3;1016/JPMorgan/B/365/r/S/;1015/Jefferies/B/330/r/S/;1012/HSBC/B/310/r/S/;1012/Wells Fargo/B/329/d/M/
+ISRG,NASDAQ,TOP,USD,435.33,8,9,5,3,0,8,473,474,415,500,32,3,1,7,1,0,82,86,62,0,482,1.6,3,90,3.3,4,36.0,1013/UBS/B/500/r/MS/4;1019/TD Cowen/B/485/r/MS/3;1013/Mizuho/H/415/u/MS/3;1007/Barclays/B/485/u/MS/;1005/Citi/B/500/r/S/;1012/BTIG/B/454/d/MS/
+MA,NYSE,TOP,USD,623.75,12,12,7,4,1,11,678,685,510,740,56,7,1,11,1,0,94,96,71,0,679,4.6,7,85,3.0,-2,44.0,1016/Bernstein/B/730/u/S/;1015/BMO/B/665/u/MS/3;1015/Deutsche Bank/B/668/r/S/;1013/Goldman Sachs/B/716/u/S/;1009/Barclays/B/660/r/S/;1008/Citi/B/675/r/S/
+PYPL,NASDAQ,TOP,USD,57.16,14,14,11,2,1,11,55.45,55.66,49,70,-38,1,6,1,10,2,100,-9,48,0,55.69,-6.4,6,93,3.7,-3,48.0,1015/Bank of America/S/53/d/MS/4;0928/UBS/H//r/M/4;1015/BMO/H/56/r/S/;1013/Bernstein/H//r/S/;1013/Goldman Sachs/S/49/d/S/;1012/Citi/H/61/r/S/
+SAP,XETR,TOP,EUR,201.8,5,6,4,1,0,4,200,200,175,220,-9,1,1,3,2,0,68,57,46,0,212,13.7,2,94,,1,32.0,1008/BMO/B//r/EX0/;0922/JPMorgan/H/175/r/EW/;0922/Jefferies/B/220/u/EW/;0908/UBS/H/201/d/EWX1/;0918/Berenberg/B/205/r/EW/
+IBM,NYSE,TOP,USD,239.31,11,11,8,2,1,11,247,246,190,280,-3,1,1,6,5,0,94,55,58,0,243,-7.9,2,92,3.3,12,28.0,0910/Bernstein/H/230/r/ST/5;1013/UBS/H/236/r/MS/4;1016/JPMorgan/B/250/r/S/;1015/Bank of America/B/280/r/S/;1015/Citi/B/245/r/S/;1015/Morgan Stanley/H/190/d/MS/3
+NKE,NYSE,TOP,USD,37.76,32,32,16,14,2,26,35.85,35.19,19,60,-74,2,24,6,17,7,100,-7,43,0,35.31,-19.3,23,83,2.5,-5,43.0,1009/Deutsche Bank/H/33/d/MS/3;1005/Barclays/B/37/d/MS/;1002/BMO/S/25/r/M/;1002/BNP Paribas/S/19/d/M/;1002/Bank of America/S/24/d/MS/;1002/Bernstein/B/45/r/MS/
+V,NYSE,TOP,USD,408.15,10,10,7,2,1,10,428,432,355,475,73,7,0,8,2,0,89,84,67,0,428,5.4,7,88,3.0,-2,43.0,1016/Bernstein/B/475/u/S/;1015/BMO/B/425/u/MS/3;1015/Wells Fargo/B/432/r/S/;1014/Bank of America/B/430/r/S/;1013/Evercore/H/370/u/S/;1013/Goldman Sachs/B/439/u/S/
+TM,NYSE,TOP,USD,196.84,1,1,0,1,0,0,,,,,100,1,0,1,0,0,24,100,43,0,237,,0,84,5.0,0,24.0,0918/Erste/B//u/M/5
+BKNG,NASDAQ,TOP,USD,163.37,11,13,7,4,0,10,223,222,170,270,-8,2,4,7,3,1,93,51,71,0,233,-7.9,5,90,4.0,-17,40.0,1007/Wells Fargo/S/190/d/M/3;0924/Citi/H/236/r/MS/;0922/Bernstein/H/188/r/MS/;0916/Morgan Stanley/B/230/r/MS/;0914/TD Cowen/B//u/M/;0831/Bank of America/B/234/d/S/
+SHOP,NASDAQ,TOP,USD,174.83,12,14,5,6,1,11,186,186,158,220,39,6,0,10,1,0,92,92,66,0,176,11.1,6,79,2.0,-8,57.0,1016/JPMorgan/B/200/u/MS/;1014/Jefferies/B/175/r/MS/;0929/Bernstein/B/160/r/MS/;0924/Mizuho//180/r/M/;1016/RBC/B/200/u/M/2;1014/Baird/B/190/u/MS/
+MCD,NYSE,TOP,USD,246.7,25,26,13,10,2,22,280,282,230,343,-75,1,20,14,7,1,100,58,58,0,294,-7.6,21,84,3.0,-6,38.0,1019/UBS///r/M/4;1008/Bank of America/H/343/r/S/;1008/Bernstein/H/250/d/MS/3;1005/Wells Fargo/B/270/d/MS/;0929/JPMorgan/B/250/d/MS/;0929/Jefferies/B/250/d/M/
+NVO,NYSE,TOP,USD,39.26,12,13,10,2,0,6,41.5,41.39,38,47,-38,0,4,0,9,3,98,-23,49,0,49.66,-14.9,1,96,3.5,-3,6.0,1009/Citi/H//r/M/4;1012/BMO/H/40/d/MS/3;0929/Deutsche Bank/S//r/M/;0923/TD Cowen/H/42/r/S/;0921/JPMorgan/H//r/M/;0921/Jefferies/H/42/r/MS/
+UNH,NYSE,TOP,USD,420.46,17,20,9,7,1,14,473,474,402,526,-22,2,6,11,3,0,100,81,65,0,477,-2.2,7,84,3.0,10,30.0,1016/JPMorgan/B/524/u/M/3;1014/Barclays/B/440/d/M/;1014/Bernstein/B/500/d/MS/;1013/UBS/B//r/M/;1009/TD Cowen/H/402/d/MS/;1007/RBC/B/478/r/S/
+PFE,NYSE,TOP,USD,30.11,8,10,6,2,0,7,29,29.02,25,33,39,4,0,2,6,0,84,24,53,0,28.99,7.0,4,96,4.3,1,29.0,1009/JPMorgan/H/30/u/MS/3;1006/Scotiabank/B/33/u/MS/;0923/Bernstein/H/29/r/S/;0922/Wells Fargo/H/28/r/S/;0921/RBC/H/25/r/S/;0910/HSBC/H/30/u/MS/
+ADBE,NASDAQ,TOP,USD,254.37,24,28,15,8,1,19,267,268,200,373,9,11,6,4,16,3,100,3,57,0,270,4.8,17,88,3.0,-5,41.0,1013/HSBC/H/267/d/M/3;1012/Wells Fargo/S/225/d/M/3;1002/Goldman Sachs/S/200/u/MS/3;1002/TD Cowen/H/245/r/MS/;0914/Citi/H/250/d/MS/;0911/BMO/H/270/u/M/
+IREN,NASDAQ,TECH,USD,26.64,12,12,4,5,3,10,82.8,81.3,40,100,-8,1,2,11,1,0,89,91,82,0,80.21,18.0,2,74,4.0,0,23.0,0914/JPMorgan/B/65/u/MS/;0903/Bernstein/B/100/r/S/;0902/Morgan Stanley/B//d/M/;0828/Citi/B//r/M/;0929/B. Riley/B/91/d/MS/4;0921/Rothschild Redbu/H/40/r/MS/4
+CIFR,NASDAQ,TECH,USD,8.85,9,11,3,3,3,9,27.83,28.37,18,51.5,18,3,2,7,2,0,78,83,78,0,29.62,-4.7,3,72,4.0,-6,25.0,1012/Morgan Stanley/B/51.5/r/MS/3;0923/UBS/B/23/u/MS/;0917/Wells Fargo/B/25/r/MS/;1016/Cantor Fitzgeral/B/19/d/M/5;0925/Rosenblatt/B/30/r/MS/;0921/Rothschild Redbu/H/18/r/MS/
+CLSK,NASDAQ,TECH,USD,8.59,1,1,0,1,0,1,19,19,19,19,-100,0,1,1,0,0,24,100,37,0,23.3,-26.9,1,84,5.0,-10,15.0,1016/Cantor Fitzgeral/B/19/d/M/5
+WULF,NASDAQ,TECH,USD,12.21,11,12,4,4,3,7,30.71,31.52,15,65,10,2,1,10,1,0,86,91,83,0,33,-7.5,2,74,4.0,8,28.0,1012/TD Cowen/B/21/r/MS/3;1009/Morgan Stanley/B/65/u/MS/;0923/UBS/B/24/r/MS/;0917/Wells Fargo/B/30/r/MS/;1016/Cantor Fitzgeral/B/30/d/MS/5;1001/William Blair/B//r/MS/
+NEM,XETR,TECH,EUR,72.95,4,5,3,1,0,4,91.75,89.86,72,115,68,3,0,4,0,0,60,100,62,0,86.46,6.9,3,92,,-2,20.0,0923/Jefferies/B/72/u/EW/;0907/Deutsche Bank/B/80/u/EW/;0904/Goldman Sachs/B/100/u/EW/;0925/Berenberg/B/115/r/EW/
+APLD,NASDAQ,TECH,USD,19.55,7,9,4,3,0,5,52.6,51.93,22,75,16,2,1,5,2,0,77,73,76,0,63.06,1.2,3,89,3.5,8,19.0,1008/UBS/B//r/M/4;1009/Morgan Stanley/H/41/u/MS/3;1008/Citi/B//r/M/;1008/Wells Fargo/B/55/u/MS/;1008/Needham/B/70/d/M/;0921/Rothschild Redbu/H/22/r/MS/
+CORZ,NASDAQ,TECH,USD,13.98,9,10,4,4,1,8,30.38,30.05,16,39,12,1,0,8,1,0,82,90,80,0,32.5,33.3,1,80,3.0,10,23.0,1014/Citi/B//r/M/;1014/UBS/B/24/r/MS/;0917/Wells Fargo/B/28/r/MS/;0831/Bernstein/B/32/u/S/;1015/BTIG/B/38/r/M/3;1015/Canaccord/B/36/r/M/3
+GLW,NYSE,TECH,USD,131.82,9,9,6,3,0,7,194,193,140,238,22,3,1,7,2,0,86,75,77,0,191,-2.6,3,90,3.0,20,23.0,1005/UBS/B/201/u/MS/4;1009/Citi/B/220/r/S/;0930/Bernstein/H/140/r/MS/3;0915/Goldman Sachs/B//r/M/;0915/Mizuho/B/180/d/MS/;0826/JPMorgan/H//r/S/
+VRT,NYSE,TECH,USD,204.57,10,11,8,0,2,10,317,325,188,368,-36,1,6,9,0,1,89,91,79,0,329,-4.9,5,87,2.7,22,36.0,1016/Morgan Stanley/B/330/d/MS/3;1015/Bernstein/B/368/r/MS/;1015/Mizuho/B/280/d/MS/3;1012/Citi/B/358/r/S/;1004/BMO/B/329/r/MS/;0930/Deutsche Bank/B/323/d/M/
+BTDR,NASDAQ,TECH,USD,7.96,3,3,1,1,1,2,21,20.29,17,25,48,1,0,3,0,0,45,100,64,0,22.14,13.3,1,71,3.5,-13,14.0,1009/Barclays/B/17/u/M/3;0915/Rosenblatt/B/25/r/M/;1002/HC Wainwright/B//r/M/4
+SNDK,NASDAQ,TECH,USD,1373.01,6,7,3,3,0,6,2549,2520,2050,3000,28,2,0,6,0,0,70,100,76,0,2276,19.9,2,85,3.0,-4,33.0,1009/Citi/B/2100/r/MS/;1006/Mizuho/B/2050/u/MS/3;1005/Bernstein/B/3000/r/S/;0922/Rosenblatt/B/2400/r/MS/;0912/Susquehanna/B/2745/r/S/;0827/Arete/B/3000/u/M/
+QBTS,NASDAQ,TECH,USD,11.88,1,1,0,1,0,1,40,40,40,40,0,0,0,1,0,0,21,100,46,0,35.73,,0,70,,-35,18.0,0921/B. Riley/B/40/r/S/
+INOD,NASDAQ,TECH,USD,55.14,2,2,0,0,2,2,115,117,90,140,0,0,0,2,0,0,31,100,51,0,124,,0,60,5.0,6,4.0,0918/BWS/B/140/r/M/5;1005/Yorkville Ives/B/90/r/M/
+SNPS,NASDAQ,TECH,USD,448.01,20,21,11,7,2,16,579,578,475,640,20,9,4,17,1,1,100,81,77,0,592,4.9,11,85,3.5,8,28.0,1001/BNP Paribas/H/475/u/M/;1001/Bank of America/B/600/u/MS/;1001/Deutsche Bank/B/640/u/MS/3;1001/Goldman Sachs/B/600/r/S/;1001/JPMorgan/B/600/d/MS/;1001/Wells Fargo/B/540/u/MS/
+PRX,EURONEXT,TECH,EUR,35.7,7,8,5,1,1,6,60.32,60.86,40,80,-23,1,3,5,2,0,76,77,73,0,66.23,-4.0,4,87,,2,18.0,1016/JPMorgan/B/71/d/EWX2/;1013/Goldman Sachs/H/40/u/WX3/;1008/UBS/B/80/r/WX4/;0911/Jefferies/B/55.9/d/EW/;0902/Bank of America/B/65/r/EW/;0909/Stifel/B/50/r/EX5/
+CCOI,NASDAQ,TECH,USD,7.75,1,1,1,0,0,1,9,9,9,9,0,0,0,0,0,1,27,-100,26,0,17.18,,0,100,,-39,14.0,0902/JPMorgan/S/9/r/S/
+VNET,NASDAQ,TECH,USD,4.12,1,1,1,0,0,1,14,14,14,14,0,0,0,1,0,0,27,100,49,1,14.2,,0,100,3.0,0,15.0,0819/Morgan Stanley/B/14/r/M/3
+U,NYSE,TECH,USD,40.53,10,11,5,5,0,9,53,52.85,48,55,68,7,0,10,0,0,88,100,78,0,51.24,12.6,6,86,3.7,5,32.0,1013/Morgan Stanley/B/55/u/M/3;1012/Wells Fargo/B/53/u/MS/3;1009/Bank of America/B/50/r/S/;1008/Jefferies/B/54/u/M/;1005/Citi/B/48/r/S/;1014/Wedbush/B/55/u/M/5
+MDB,NASDAQ,TECH,USD,358.33,28,30,13,13,2,24,461,461,372,560,14,9,5,24,3,0,100,89,77,0,459,4.8,14,83,4.0,0,40.0,1008/Scotiabank/B/450/u/MS/4;1013/Bank of America/B/540/r/S/;0930/BMO/B/420/d/M/;0930/Morgan Stanley/B//r/M/;0930/RBC/B/465/r/M/;0930/UBS/H/375/d/M/
+OLED,NASDAQ,TECH,USD,81.6,1,1,1,0,0,1,71,71,71,71,-100,0,1,0,0,1,29,-100,9,0,112,-16.5,1,100,4.0,-45,11.0,1008/Citi/S/71/d/M/4
+CALX,NYSE,TECH,USD,35.88,2,2,1,1,0,2,56.5,56.76,55,58,-59,0,1,2,0,0,39,100,49,1,62.33,-10.8,1,85,3.0,-16,9.0,0722/JPMorgan/B/58/d/MS/3;0723/Rosenblatt/B/55/r/S/
+BIDU,NASDAQ,TECH,USD,80.53,2,2,0,2,0,2,106,107,105,108,-100,0,2,0,2,0,37,0,31,0,149,-25.0,1,80,4.5,-9,36.0,0907/Arete/H/108/d/M/5;0828/Susquehanna/H/105/d/M/4
+BULL,NASDAQ,TECH,USD,6.09,2,2,1,1,0,2,10.5,10.3,9,12,47,1,1,2,0,0,42,100,62,0,11.9,-20.0,1,97,4.5,,5.0,1009/Scotiabank/B/9/u/M/4;1009/Rosenblatt/B/12/d/M/5
+QUBT,NASDAQ,TECH,USD,6.56,2,2,0,1,1,2,27,24.76,22,32,36,1,0,2,0,0,30,100,54,0,18.86,6.7,1,58,3.0,-13,7.0,1019/Rosenblatt/B/22/r/M/5;0826/Ascendiant/B/32/u/M/1
+ALIT,NYSE,TECH,USD,8.65,2,3,0,2,0,1,22,22,22,22,-33,0,1,1,1,0,33,47,46,0,17,-31.2,1,66,2.0,-5,5.0,0910/Needham/H//r/S/;1005/DA Davidson/B/22/d/MS/2
+DUOL,NASDAQ,TECH,USD,140.58,6,7,3,3,0,5,161,161,135,210,43,2,0,2,4,0,70,32,55,0,135,54.0,2,84,2.5,-4,27.0,1009/Morgan Stanley/H/140/r/M/3;0831/Evercore/B/210/u/S/;0827/JPMorgan/H/135/u/MS/;0916/Truist/H//r/S/;0825/Argus/H/146/r/MS/;0929/DA Davidson/B/175/r/MS/2
+SNAP,NYSE,TECH,USD,6.4,3,3,2,1,0,2,7.5,7.48,7,8,37,1,0,0,3,0,53,0,46,0,7.44,22.8,1,98,4.0,-27,47.0,1014/UBS/H/7/u/M/4;0917/RBC/H/8/r/M/3;0902/Guggenheim/H//r/M/5
+TRMB,NASDAQ,TECH,USD,61.08,1,1,1,0,0,1,75,75,75,75,-100,0,1,1,0,0,27,100,30,0,79.4,-1.3,1,100,3.0,-34,15.0,1008/JPMorgan/B/75/d/M/3
+VEEV,NYSE,TECH,USD,319.53,21,25,11,10,0,20,302,301,260,360,64,16,0,15,5,0,100,73,65,0,299,24.5,15,86,3.0,-6,32.0,1019/Barclays/B/360/u/M/3;1001/Wells Fargo/B/330/r/MS/;0918/Morgan Stanley/H/275/u/MS/;0915/TD Cowen/B/283/u/MS/;0902/JPMorgan/B/299/r/S/;0828/Citi/H/273/u/MS/
+CMCSA,NASDAQ,TECH,USD,22.11,13,13,9,4,0,12,28,27.82,18,43,-66,0,8,4,7,2,100,15,60,0,28.6,-9.0,7,92,4.0,3,29.0,1013/Bernstein/H/23/r/M/3;1002/Scotiabank/H/28/d/MS/;0929/Barclays/H/24/d/MS/;0925/Morgan Stanley/H/27/d/MS/;0924/Citi/B/28/d/MS/;0923/Wells Fargo/S/23/r/S/
+EPAM,NYSE,TECH,USD,129.41,4,4,3,1,0,3,123,123,94,156,-14,1,1,1,3,0,60,27,39,0,123,173.7,1,92,3.0,-20,22.0,0924/Wells Fargo/B/156/u/S/;0901/Jefferies/H/94/r/S/;0826/JPMorgan/H/120/d/MS/3;0825/Wolfe Research/H//r/S/
+ADSK,NASDAQ,TECH,USD,243.61,19,21,9,10,0,17,301,300,215,355,25,5,1,14,3,0,100,82,74,0,311,1.0,5,84,3.0,-8,39.0,0924/UBS/B//r/M/4;1006/Citi/H/276/u/MS/;0918/BMO/H/283/u/MS/;0918/Bank of America/B/300/r/S/;0918/Mizuho/B//r/S/;0918/Wells Fargo/B/330/r/S/
+TTD,NASDAQ,TECH,USD,12.56,6,7,3,3,0,4,14.25,14.37,13,15,12,2,1,1,4,0,71,27,52,0,13.22,1.0,2,86,3.0,5,43.0,1014/UBS/B/15/d/M/4;0909/RBC/H/15/r/MS/;0908/Evercore//14/r/M/;0918/Guggenheim/H/13/u/M/;0908/KeyBanc/H//r/M/;1005/DA Davidson/H//u/M/2
+UPWK,NASDAQ,TECH,USD,8.74,6,6,4,2,0,6,9.42,9.32,8,11.5,-81,0,5,1,4,0,74,15,40,1,9.88,-15.6,5,93,3.7,-3,11.0,0814/UBS/H/9/d/M/4;0811/Scotiabank/H/8/d/M/4;0811/Goldman Sachs//11.5/r/M/;0811/RBC/H/8/d/M/;0812/Canaccord/H/9/d/M/3;0811/Needham/B/11/d/M/
+ACN,NYSE,TECH,USD,240.61,20,27,13,7,0,19,226,225,175,278,42,13,1,7,9,1,100,35,59,0,231,22.4,13,90,3.7,-6,31.0,1015/UBS//278/r/M/4;1015/TD Cowen/H/201/u/MS/3;1006/Mizuho/B/241/u/M/;1002/BMO/H/235/u/MS/;1002/Jefferies/H/220/r/MS/;1002/Morgan Stanley/H/195/u/MS/
+1810,HKEX,TECH,HKD,27.06,8,10,8,0,0,7,33.74,33.74,30,39,15,1,0,6,2,0,86,75,67,0,34.49,,0,100,,-14,36.0,0930/HSBC/B/33.2/r/EW/;0925/Citi/B/34/r/EW/;0922/Goldman Sachs/B/39/r/EW/;0911/CLSA/B/35/r/EW/;0911/Daiwa/B/30/r/EW/;0909/JPMorgan/H/32/r/EW/
+ZETA,NYSE,TECH,USD,33.62,13,13,3,8,2,11,39.27,38.43,25,55,68,8,0,10,1,0,92,88,72,0,37.86,29.2,8,73,4.0,25,17.0,1016/Goldman Sachs/B/45/u/M/3;1005/RBC/B/40/u/MS/;0921/Morgan Stanley/H/25/r/S/;1009/B. Riley/B//r/M/;1009/Canaccord/B/37/u/MS/;1009/KeyBanc/B/38/u/MS/
+TMUS,NASDAQ,TECH,USD,158.91,9,10,6,3,0,8,219,219,170,260,-25,2,4,8,1,0,87,88,70,0,237,-4.3,5,91,3.3,9,31.0,1009/Scotiabank/B/212/d/MS/4;1008/Bernstein/H/220/r/MS/;0929/Barclays/B/200/d/MS/3;0928/Morgan Stanley/B/230/r/S/;0925/Goldman Sachs/B/211/d/M/;0921/JPMorgan/B/260/d/MS/
+CTSH,NASDAQ,TECH,USD,68.01,5,5,4,1,0,4,65,64.59,60,70,64,3,0,2,3,0,69,35,50,0,65.17,20.6,3,96,3.5,-1,32.0,1019/Citi/H//r/M/4;1013/TD Cowen/H/60/u/M/3;0925/Daiwa/H/60/u/M/;0918/Deutsche Bank/B/70/u/M/;1009/Wedbush/B/70/r/M/
+DSP,NASDAQ,TECH,USD,13.28,9,10,3,5,1,8,19.62,19.46,17,24,55,5,0,9,0,0,81,100,79,1,19.29,13.9,4,77,3.0,-4,12.0,0811/Citi/B//r/M/4;0811/Scotiabank/B/17/r/S/;0811/UBS/B/19/u/MS/;0812/Canaccord/B/22/r/S/;0811/Citizens JMP/B/17/u/MS/;0811/Raymond James/B/20/u/S/
+PCOR,NYSE,TECH,USD,60.09,5,6,1,4,0,5,63.8,63.88,56,70,22,2,1,4,1,0,62,82,51,0,68.52,1.5,3,79,4.0,-5,26.0,1012/Barclays/B/62/u/M/3;1016/Cantor Fitzgeral/B/70/u/MS/5;0928/DA Davidson/H/56/d/MS/;0928/Piper Sandler/B/68/r/MS/;0827/Stifel/B/63/r/S/
+CHTR,NASDAQ,TECH,USD,110.5,5,5,3,2,0,4,130,130,110,150,-45,1,3,0,2,3,67,-56,39,0,196,-7.5,2,91,4.0,-1,25.0,0925/Goldman Sachs/S/110/d/M/3;0925/Morgan Stanley/H/140/d/M/;0821/Bernstein/H/150/r/S/;1001/Arete/S//u/M/5;0914/Wolfe Research/S/118/d/M/
+TEAM,NASDAQ,TECH,USD,219.16,12,12,7,5,0,12,237,237,210,280,90,11,0,11,0,0,95,100,74,0,218,27.3,11,88,3.3,3,36.0,1019/UBS//280/r/M/3;1015/Mizuho/B/235/u/M/;1014/Wells Fargo/B/230/u/M/;1013/Barclays/B/222/u/M/;1012/RBC/B/235/u/M/;0901/Citi/B/225/u/M/
+NOW,NYSE,TECH,USD,148.19,20,21,12,7,1,20,171,172,140,266,77,16,0,19,0,0,100,100,78,0,154,21.6,16,87,3.0,14,53.0,1019/UBS//165/r/M/4;1020/BMO/B/165/u/S/;1020/Bernstein/B/266/u/MS/;1015/Mizuho/B/170/u/MS/3;1015/TD Cowen/B/165/u/MS/;1014/Citi/B/170/u/MS/
+INTU,NASDAQ,TECH,USD,334.92,21,23,14,7,0,19,366,368,290,500,-42,1,9,9,9,2,100,36,57,0,394,-9.8,8,90,2.7,-10,35.0,1007/Citi/B/416/r/S/;0924/Goldman Sachs/S/304/r/MS/3;0921/BMO/B/412/r/MS/3;0918/Evercore/B//r/M/;0918/Jefferies/B/500/d/MS/;0918/Mizuho/B/430/r/M/
+KVYO,NYSE,TECH,USD,19.23,11,12,5,6,0,9,26,25.61,20,31,-15,0,1,9,1,0,91,88,71,0,26.24,-25.9,1,84,3.5,-16,25.0,1016/Goldman Sachs/H/20/d/M/3;0911/Wells Fargo/B/22/r/S/;0910/Barclays/B/22/r/S/;0910/Morgan Stanley/B/31/r/S/;0908/Citi/B//r/M/;0910/Stifel//22/r/M/4
+SE,NYSE,KONS,USD,82.23,4,4,3,1,0,2,152,153,152,153,69,2,0,4,0,0,61,100,75,0,156,,0,94,3.5,-13,31.0,0915/Morgan Stanley/B/153/r/S/;0903/Bank of America/B//r/S/;0908/RBC/B//u/M/2;0907/Arete/B/152/u/MS/5
+EVD,XETR,KONS,EUR,61.9,9,13,7,2,0,9,87.94,87.94,67.5,100,6,2,1,7,2,0,87,76,74,0,84.91,0.4,3,93,,-5,16.0,1020/Citi/H/67.5/r/EX6/;1013/Goldman Sachs/H/68/r/EX7/;1005/JPMorgan/B/95/r/EWX8/;1002/Bernstein/B/85/d/EWX9/;0930/Jefferies/B/100/r/EW/;0928/UBS/B/100/r/EW/
+EL,NYSE,KONS,USD,106.02,11,11,9,2,0,11,113,114,95,122,64,7,1,7,4,0,95,64,68,0,109,8.4,7,95,3.0,-8,32.0,1019/JPMorgan/B/115/u/M/3;1019/Jefferies/H/120/u/M/3;1015/Morgan Stanley/H/112/u/M/3;1005/Barclays/B/108/u/MS/;1005/Goldman Sachs/B/116/u/S/;1005/Wells Fargo/H/95/d/MS/
+AAK,OMXSTO,KONS,SEK,190,6,6,2,3,1,6,215,210,172,277,-100,0,6,3,1,2,66,-4,35,0,243,-12.1,6,75,,-2,11.0,1002/BNP Paribas/S/172/d/EW/;0922/Barclays/S/195/d/EW/;0928/DNB Carnegie/B/277/d/EW/;0923/Danske Bank/B/220/d/EW/;0923/Handelsbanken/H/204/d/EW/;0925/SB1 Markets/B/220/d/EW/
+JD,NASDAQ,KONS,USD,26.73,3,3,2,1,0,3,35,35.61,30,38,-100,0,3,2,1,0,52,75,43,0,39.01,-5.0,2,93,3.5,-27,38.0,1013/Bank of America/B/37/d/M/4;1014/Barclays/B/38/d/M/3;0907/Arete/H/30/d/MS/
+GRAB,NASDAQ,KONS,USD,2.88,3,3,2,1,0,2,6.45,6.33,5.9,7,0,0,0,2,0,0,51,100,63,0,5.52,,0,91,3.0,-20,23.0,0925/Bank of America/B//r/M/4;0824/Bernstein/B/5.9/r/S/;0916/KeyBanc//7/r/M/2
+RMS,EURONEXT,KONS,EUR,1339,3,3,3,0,0,3,1436,1436,1168,1600,-33,1,2,1,1,1,54,0,37,0,1656,-8.8,1,100,,,26.0,1005/UBS/S/1168/u/EX10/;0930/Citi/H/1540/d/WX11/;0929/Jefferies/B/1600/d/EX12/
+UAL,NASDAQ,KONS,USD,98.51,7,10,5,2,0,7,152,152,139,167,-89,0,9,7,0,0,79,100,67,0,155,-8.4,9,94,4.0,-1,28.0,1016/UBS/B/139/d/MS/4;1006/Wells Fargo/B/160/d/MS/;1002/TD Cowen/B/167/d/MS/;0928/BMO/B/140/d/M/;0911/Barclays/B/160/d/MS/;1007/Susquehanna/B/150/d/M/4
+CELH,NASDAQ,KONS,USD,30.14,6,7,5,1,0,6,38,38.1,35,42,-39,0,2,4,1,0,75,79,58,0,42.57,1.0,2,97,3.3,-13,27.0,1015/UBS//38/r/M/4;1013/TD Cowen/B/35/d/M/3;1006/Jefferies/B/42/r/M/3;0917/Morgan Stanley/B/42/r/S/;0827/Deutsche Bank/H/35/d/MS/;0918/Piper Sandler/B/36/r/MS/
+CPNG,NYSE,KONS,USD,14.37,7,7,7,0,0,7,23,23.01,12,29,-21,1,3,5,1,1,82,58,74,1,23.25,-7.9,4,100,3.3,1,20.0,0805/Bank of America/B/24/d/MS/4;0807/JPMorgan/B/24/d/S/;0806/Barclays/B/29/r/S/;0805/Deutsche Bank/B/22/u/MS/3;0805/Mizuho/H/22/d/MS/3;0805/Morgan Stanley/B/28/r/S/
+DASH,NASDAQ,KONS,USD,192.79,12,12,6,6,0,8,264,264,230,295,2,3,2,9,0,1,95,77,75,0,261,15.3,4,87,4.3,-6,49.0,1005/Wells Fargo//230/u/M/3;0930/Citi/B//r/M/;0909/Scotiabank/B/275/r/M/;0908/UBS/B/295/r/M/;0903/Bernstein/B//r/M/;0824/Barclays/S//d/M/
+PDD,NASDAQ,KONS,USD,81.47,9,9,6,3,0,9,111,111,89,136,-22,2,4,4,5,0,87,41,65,0,114,-3.5,5,92,4.0,-5,42.0,0910/JPMorgan/H/95/d/MS/3;0826/Bank of America/H/117/u/MS/;0826/Barclays/H/89/r/S/;0825/Citi/B/136/u/S/;0825/Goldman Sachs/B/134/d/S/;0824/Deutsche Bank/H/105/r/M/
+LULU,NASDAQ,KONS,USD,98.68,22,28,11,11,0,16,94.94,94.68,44,122,-61,0,16,0,18,4,100,-20,44,0,98.15,-18.6,16,85,3.0,-1,36.0,1019/Wells Fargo/H/90/d/MS/3;1008/Morgan Stanley/S/83/d/MS/;0914/Goldman Sachs/H/95/d/MS/;0909/BMO/S/70/r/M/;0909/Citi/H/117/d/M/;0904/BNP Paribas/S/44/d/M/
+ONON,NYSE,KONS,USD,35.55,20,23,10,10,0,14,41.29,41.19,28,60,17,5,1,14,2,1,100,75,70,0,43.72,7.0,6,85,3.0,-6,32.0,1016/Morgan Stanley/B/39/r/MS/;1001/JPMorgan/B/44/u/MS/;0929/Bank of America/B/43/d/MS/;0928/Citi/B//r/MS/;0924/BMO/H/33/u/M/;0924/Barclays/B/44/u/M/
+TTWO,NASDAQ,KONS,USD,205.16,10,11,6,4,0,9,305,306,280,368,0,0,0,9,0,0,89,100,79,0,295,,0,88,3.0,-3,31.0,1015/Bank of America/B/368/r/S/;1012/Wells Fargo/B/300/r/MS/3;0928/JPMorgan/B/310/r/S/;0928/UBS//310/r/M/;0918/Morgan Stanley/B/280/r/S/;0828/BMO/B/285/r/S/
+TSCO,NASDAQ,KONS,USD,32.98,8,8,4,4,0,6,35.17,35.44,33,38,35,4,1,2,5,0,79,34,56,0,35.44,3.8,4,83,2.3,7,34.0,1019/Wells Fargo/B/36/u/M/3;1013/Citi/B/38/u/M/;1012/UBS/H//r/M/;0910/Barclays/H/35/r/S/;1008/DA Davidson//36/r/M/;0827/Erste/H//d/S/
+ADS,XETR,KONS,EUR,158.8,8,14,6,2,0,8,206,207,187,245,-28,0,4,7,1,0,83,91,65,0,197,-6.1,4,92,,-5,33.0,1002/JPMorgan/B/210/d/EW/;1002/Jefferies/B/187/d/EWX13/;1001/Deutsche Bank/B/205/d/EW/;1001/RBC/B/200/r/EWX14/;0930/Bernstein/B/245/r/EW/;0902/Barclays/B/210/r/EW/
+POOL,NASDAQ,KONS,USD,172.81,3,3,1,1,1,2,188,182,165,210,-81,0,2,0,3,0,46,0,28,0,193,-10.8,1,76,3.3,-15,17.0,1016/Wells Fargo/H/165/d/M/3;1019/Longbow/H//d/M/5;0824/DA Davidson/H/210/r/M/2
+DKS,NYSE,KONS,USD,143.09,20,20,11,9,0,19,164,165,99,245,-81,0,15,11,6,2,100,49,57,0,156,-29.9,13,87,4.0,-6,30.0,0908/BMO/S/110/r/M/;0827/Citi/B/190/d/M/;0827/UBS/B/178/d/M/;0826/BNP Paribas/S/99/r/M/;0826/Bank of America/B/200/d/M/;0826/Barclays/B/150/d/M/
+BRSL,NYSE,KONS,USD,9.43,2,2,0,2,0,2,15,15.19,11,19,-50,0,1,1,1,0,35,52,46,0,15.99,-15.4,1,74,4.0,-26,9.0,0925/Stifel/B/19/r/MS/4;1020/Truist/H/11/d/S/
+DOLE,NYSE,KONS,USD,13.26,2,2,1,1,0,2,17.75,17.09,14,21.5,0,0,0,1,0,0,39,100,47,1,17.44,,0,85,3.0,-2,4.0,0811/Deutsche Bank//14/r/M/3;0813/Davy/B/21.5/r/X15/
+CPRI,NYSE,KONS,USD,16.43,2,2,1,1,0,1,20,20,20,20,62,1,0,1,1,0,39,41,47,0,19.93,,0,85,3.0,-13,17.0,0922/Jefferies/H//r/M/3;1016/Raymond James/B/20/u/M/3
+DPZ,NASDAQ,KONS,USD,314.17,17,17,11,5,1,11,348,347,308,425,-54,1,10,7,10,0,100,43,57,0,356,-8.5,9,88,2.7,19,34.0,1015/Bernstein/H//r/M/3;1014/BMO/B//r/M/3;1014/Bank of America/B/410/d/M/;1014/Citi/H/308/d/M/;1014/Mizuho/B/380/d/M/;1014/Morgan Stanley/H/345/d/M/
+MKC,NYSE,KONS,USD,47.26,10,12,8,2,0,9,53.56,53.75,47,65,-85,0,10,5,5,0,91,53,53,0,53.82,-9.4,10,94,3.0,-3,18.0,1003/JPMorgan/B/55/d/MS/;1002/BNP Paribas/B/65/d/M/;1002/Bank of America/B/55/d/S/;1002/Barclays/H/47/d/MS/;1002/Bernstein/B/59/r/M/3;1002/Deutsche Bank/B/57/d/MS/
+LINC,NASDAQ,KONS,USD,22.29,1,1,0,0,1,1,62,62,62,62,100,1,0,1,0,0,13,100,51,0,47.83,14.8,1,40,,-5,6.0,0827/Texas Capital/B/62/u/S/
+GIS,NYSE,KONS,USD,33.35,12,15,10,1,1,12,36.58,36.36,30,45,18,3,1,2,7,2,97,-4,58,0,36.65,-0.1,4,92,2.5,-2,23.0,1001/Goldman Sachs/H/35/r/S/;0930/Bank of America/H/40/r/MS/;0925/Barclays/H/37/u/M/3;0924/Bernstein/S/30/r/M/;0924/Deutsche Bank/H/34/u/MS/;0924/Evercore/H/38/r/MS/
+AZO,NYSE,KONS,USD,3168.95,20,21,12,7,1,18,3565,3554,3000,3917,-79,0,16,14,3,0,100,82,59,0,3709,-6.6,15,86,3.0,-7,31.0,0929/Bernstein/B/3698/r/M/3;0929/Morgan Stanley/H//d/M/3;0928/JPMorgan/B/3700/d/M/3;0923/BMO/B/3500/d/M/;0923/Barclays/B/3400/d/M/;0923/Evercore/B//r/M/
+LCID,NASDAQ,MOTO,USD,3.13,5,5,4,1,0,3,4.33,4.34,3,6,-43,0,2,0,4,1,68,-21,50,0,6.19,-41.4,2,95,3.3,-16,13.0,1015/Morgan Stanley/S/3/d/M/3;1006/UBS/H//r/M/;0824/Evercore/H/6/r/S/;1012/RBC/H/4/d/M/2;1012/Cantor Fitzgeral/H//r/M/5
+STLAM,MIL,MOTO,EUR,3.83,9,9,7,2,0,9,4.73,4.73,4,6,-54,0,4,0,7,2,87,-24,51,0,5.31,-27.4,4,93,,3,26.0,1019/JPMorgan/H/6/r/WX16/;1015/Deutsche Bank/H/4.5/d/WX17/;1015/RBC/H/4/d/WX18/;1009/UBS/H/4.5/r/WX18/;0922/Bernstein/S/4/r/EW/;0921/Evercore/H/5.5/r/EW/
+STM,XETR,MOTO,EUR,16.02,5,7,2,2,1,5,26.36,27.45,17.8,34,-14,1,2,5,0,0,61,100,67,1,23.22,-8.8,3,76,,9,6.0,0803/Bernstein/B/28/r/W/;0803/JPMorgan/B/30/r/W/;0804/Berenberg/B/22/d/EW/;0804/Warburg/B/34/r/EW/;0804/mwb research/B/17.8/r/EX19/
+WRD,NASDAQ,MOTO,USD,4.38,2,2,2,0,0,2,11.35,11.32,10.7,12,0,0,0,2,0,0,44,100,59,1,13.46,,0,100,3.5,0,13.0,0814/Bank of America/B/10.7/r/M/4;0819/Morgan Stanley/B/12/r/M/3
+VOW3,XETR,MOTO,EUR,69.74,9,11,7,2,0,9,99.56,100,73,120,-24,0,3,4,5,0,87,44,69,0,101,-6.0,2,93,,-1,24.0,0929/Deutsche Bank/B/105/r/E/;0923/Bernstein/H/100/r/EW/;0921/Jefferies/B/120/r/EW/;0918/JPMorgan/H/110/r/EW/;0918/RBC/B/120/r/EW/;0904/UBS/H/80/r/EW/
+APTV,NYSE,MOTO,USD,44.98,7,8,5,1,1,6,64.33,63.11,56,77,-61,1,5,6,1,0,77,84,62,0,63.71,-9.0,5,89,3.0,-14,21.0,1007/UBS/B/57/d/M/4;1009/Barclays/B/60/d/M/3;1006/Goldman Sachs/B/61/d/M/;0915/JPMorgan/H/56/d/MS/;1012/RBC/B/77/d/MS/2;0909/Benchmark/B//u/M/
+NIO,NYSE,MOTO,USD,3.44,11,11,8,2,1,9,5.37,5.46,4,8.5,-74,0,7,5,5,1,92,35,72,0,5.68,-22.6,6,88,2.7,0,24.0,0908/UBS/B/8.5/r/S/;0904/Goldman Sachs/B/6.1/d/MS/3;0902/Barclays/S/4/r/S/;0902/Bernstein/H/5/d/MS/3;0902/JPMorgan/H/4.5/d/M/;0901/Bank of America/H/5.2/d/S/
+CPRT,NASDAQ,MOTO,USD,27.41,10,11,6,2,2,9,38.33,38.52,25,47,5,4,4,6,2,1,87,50,71,0,39.44,2.6,6,84,4.0,-1,14.0,0928/BNP Paribas/B/43/u/M/5;0925/Barclays/S/25/d/MS/;0916/HSBC/H/36/d/MS/3;0911/Jefferies/B/47/u/S/;0903/Deutsche Bank//40/r/M/;0903/JPMorgan/B/40/u/MS/
+RNO,EURONEXT,MOTO,EUR,27.88,10,10,7,2,1,9,32.48,32.34,26,40,-42,1,5,4,5,1,89,24,54,0,35.79,-9.2,3,88,,-8,20.0,1012/Deutsche Bank/H/30/d/WX20/;1012/Jefferies/H/30/d/WX20/;0922/Bernstein/B//r/EW/;0914/Morgan Stanley/H/31/u/EW/;0908/BNP Paribas/B/40/r/EW/;0824/UBS/S/26/d/EW/
+BMW,XETR,MOTO,EUR,57.64,7,14,5,2,0,7,70,70.23,60,82,-27,1,5,4,3,0,78,58,57,0,67.5,-5.3,4,91,,-6,24.0,1009/UBS/H/60/d/EWX21/;1005/Jefferies/H/60/d/EWX22/;1001/Deutsche Bank/B/71/d/EW/;1001/JPMorgan/B/82/r/EW/;0930/Bernstein/B/82/r/EW/;0916/Berenberg/B/75/u/EWX23/
+MBG,XETR,MOTO,EUR,41.42,6,9,4,2,0,5,55.4,55.66,44,70,-32,0,3,2,4,0,72,31,56,0,52.41,-5.6,2,90,,-6,25.0,1013/RBC/H/44/d/EWX24/;0929/Deutsche Bank/B/70/d/EW/;0922/Bernstein/H/56/r/EW/;0921/UBS/H//r/W/;0916/Berenberg/H/52/d/EW/;0827/DZ Bank/B/55/r/EW/
+PONY,NASDAQ,MOTO,USD,5.39,1,1,1,0,0,1,25,25,25,25,0,0,0,0,0,0,27,,43,0,18.76,,0,100,,-30,20.0,0827/Daiwa//25/r/X25/
+AMV0,XETR,MOTO,EUR,36.45,5,7,5,0,0,5,53.86,53.86,42.3,62,-29,0,2,4,1,0,70,80,64,0,51.98,-8.6,2,100,,-4,12.0,1019/Citi/B/56/r/EX26/;1005/Bernstein/B/54/r/EWX27/;0925/Deutsche Bank/B/55/d/EW/;0923/Jefferies/H/42.3/d/EW/;0915/JPMorgan/B/62/r/EW/
+P911,XETR,MOTO,EUR,42.73,8,11,7,1,0,8,49.31,49.44,40,60,16,3,1,3,5,0,84,39,60,0,45.56,5.6,4,96,,-1,24.0,1007/Jefferies/H/49/r/EWX28/;0929/UBS/B/60/r/EWX29/;0922/Bernstein/H/47/u/EW/;0917/Deutsche Bank/B/55/u/EW/;0915/RBC/H/40/d/EW/;0910/JPMorgan/B/50/r/EW/
+LI,NASDAQ,MOTO,USD,11.89,2,2,1,1,0,2,13.75,13.92,13,14.5,-41,0,1,0,2,0,38,0,32,0,15.16,-13.3,1,82,2.0,-4,29.0,0826/Bernstein/H/14.5/r/M/;0827/Piper Sandler/H/13/d/M/2
+XPEV,NYSE,MOTO,USD,9.87,7,8,5,2,0,7,17.21,16.69,11.5,28,-97,0,7,4,2,1,79,37,63,0,17.33,-20.1,7,93,3.5,-2,30.0,0909/UBS/H/12/d/MS/4;0929/JPMorgan/H/11.5/d/MS/3;0825/Barclays/S/14/d/MS/;0825/Citi/B/21/d/S/;0824/Bank of America/B/18/d/S/;0825/CMB Internationa/B/16/d/S/
+HTZ,NASDAQ,MOTO,USD,1.94,1,2,1,0,0,1,2.5,2.5,2.5,2.5,-100,0,2,0,1,0,27,0,25,0,2.13,-15.5,2,100,3.0,-26,10.0,1015/Morgan Stanley/H/2.5/d/MS/3
+RBA,TSX,PRZEM,CAD,113.26,3,4,2,1,0,3,184,183,155,214,-8,1,1,3,0,0,51,100,62,0,184,-3.8,2,89,3.0,-13,14.0,1006/Barclays/B/154.53/d/MSc/3;0923/RBC/B/213.53/r/Mc/2;1015/National Bank/B/185.43/u/Mc/4
+ASTS,NASDAQ,PRZEM,USD,41.24,8,9,3,4,1,5,82.4,81.67,54,108,-9,2,3,4,4,0,77,51,72,0,78.86,-34.2,2,77,2.7,12,16.0,1012/Deutsche Bank/B/93/u/MS/3;1002/RBC/H//d/M/;0902/UBS/B//u/M/;1009/Berenberg/B/92/r/MS/;1005/William Blair/H//r/MS/3;1002/B. Riley/H/65/d/MS/
+FLY,NASDAQ,PRZEM,USD,16.4,4,4,3,0,1,4,37,35.59,32,45,-29,0,1,1,3,0,58,12,56,0,38,-5.9,1,85,3.0,-13,11.0,1012/Goldman Sachs/H/32/d/S/;1009/Barclays/H/34/r/MS/3;0911/Morgan Stanley/H/37/r/S/;0914/Roth/B/45/r/S/
+ONDS,NASDAQ,PRZEM,USD,6.16,7,7,1,2,4,6,18,17.65,13,25,0,0,0,7,0,0,65,100,70,0,18.88,,0,61,4.0,-1,11.0,1019/Citi/B//r/M/4;1005/Citizens JMP/B/14/r/M/4;0914/Needham/B/19/r/MS/4;0928/Northland/B/18/r/S/;0923/Roth/B/13/r/S/;0922/HC Wainwright/B/25/r/S/
+DY,NYSE,PRZEM,USD,252.8,10,13,4,5,1,10,522,526,375,625,-41,1,6,9,0,0,86,100,78,0,521,-18.1,7,81,3.5,0,12.0,0917/UBS/B/525/d/MS/;0828/Bank of America/B/550/r/S/;0827/JPMorgan/B/570/d/MS/;0827/Wells Fargo/B/550/d/MS/;1009/Cantor Fitzgeral/B/476/d/MS/5;0917/Guggenheim/B/620/r/M/
+RCAT,NASDAQ,PRZEM,USD,4.62,3,3,1,1,1,3,12.33,12.63,9,15,-19,0,1,2,1,0,45,68,55,0,17,-13.3,1,73,5.0,-10,8.0,0831/Evercore/B/15/r/MS/;0902/Piper Sandler/H/9/r/MS/;0917/Northland/B/13/d/MS/5
+LUNR,NASDAQ,PRZEM,USD,10.57,2,2,1,1,0,1,13,13,13,13,59,1,0,1,0,1,41,-9,45,0,30.45,18.2,1,92,5.0,-21,13.0,0831/Bank of America/S/13/u/MS/;0921/Cantor Fitzgeral/B//r/M/5
+SYM,NASDAQ,PRZEM,USD,39.33,2,2,1,1,0,2,49,47.57,38,60,-100,0,2,1,0,1,40,-13,27,0,62.86,-16.8,2,88,3.5,-24,19.0,0908/Barclays/S/38/d/MS/3;0915/Needham/B/60/d/MS/4
+JOBY,NYSE,PRZEM,USD,4.69,6,6,3,2,1,5,10.2,8.93,4,18,-73,0,3,1,3,2,69,-33,54,0,9.81,-23.0,3,80,3.0,-7,10.0,1016/Morgan Stanley/H/10/d/MS/3;1012/Goldman Sachs/S/7/d/S/;1009/Barclays/S/4/d/MS/3;0925/Canaccord/H/12/r/S/;0921/Cantor Fitzgeral/H//r/M/;0921/HC Wainwright/B/18/r/MS/
+HEI,XETR,PRZEM,EUR,145.4,5,8,4,1,0,5,233,235,211,286,-52,0,4,5,0,0,68,100,67,0,207,-6.4,4,94,,4,21.0,1009/RBC/B/211/d/EX30/;1001/JPMorgan/B/225/d/EWX31/;1001/Jefferies/B/286/d/EW/;0922/UBS/B/230/d/EW/;0908/Berenberg/B/215/r/EW/
+DUE,XETR,PRZEM,EUR,16.42,2,2,0,1,1,2,25,23.09,18,32,-64,0,1,1,1,0,29,36,35,0,24.72,-18.2,1,55,,-12,9.0,0924/DZ Bank/H/18/d/EW/;0831/mwb research/B/32/r/EW/
+YSS,NYSE,PRZEM,USD,5.88,7,7,4,2,1,6,12.5,12.94,9,17,-34,0,2,2,4,0,75,41,67,0,13.88,-56.0,2,84,3.3,-5,14.0,1009/Barclays/H/11/r/M/3;0910/Citi/B/13/d/M/;0831/Wells Fargo/B/17/d/M/;0825/Goldman Sachs//14/r/M/;0914/Guggenheim/H//r/M/5;1015/Piper Sandler/H/9/r/M/2
+STN,TSX,PRZEM,CAD,96.74,4,4,2,2,0,2,158,155,146,169,0,0,0,4,0,0,59,100,67,1,137,,0,88,3.5,0,13.0,0814/Scotiabank/B//r/M/4;0814/RBC/B/146/r/X32/;0814/CIBC/B//r/M/3;0814/Desjardins/B/169/r/X33/
+LMB,NASDAQ,PRZEM,USD,48.51,4,4,2,1,1,4,67.5,61.75,50,95,-58,1,2,2,0,1,56,8,42,0,75,-8.0,3,79,3.5,9,5.0,0821/JPMorgan/S/50/d/M/;0821/RBC//50/r/M/;1008/Stifel/B/75/d/M/4;0902/Lake Street/B/95/u/M/3
+JBTM,NYSE,PRZEM,USD,106.37,4,5,1,3,0,3,157,156,150,171,-18,0,1,4,0,0,55,100,59,0,163,-9.0,1,77,3.0,-3,10.0,0908/Barclays/B/150/r/MS/3;0924/Baird/B/171/d/MS/3;0910/KeyBanc/B/150/r/MS/;0901/William Blair/B//r/S/
+BZU,MIL,PRZEM,EUR,39.07,4,4,3,1,0,4,41.23,41,34,44,-100,0,4,0,3,1,60,-27,29,0,48.9,-16.1,3,92,,-5,17.0,0930/Goldman Sachs/H/44/d/EW/;0923/Jefferies/H/42.9/d/EW/;0922/UBS/S/34/d/EW/;0908/Berenberg/H/44/d/EW/
+REZI,NYSE,PRZEM,USD,17.08,1,1,1,0,0,1,30,30,30,30,0,0,0,1,0,0,27,100,49,0,26.8,,0,100,3.0,-11,7.0,0928/Evercore/B/30/r/M/3
+KTOS,NASDAQ,PRZEM,USD,39.24,9,10,5,3,1,7,84.86,80.38,68,145,-32,1,4,8,0,1,84,74,76,0,95.31,-20.3,3,85,3.7,-2,27.0,1019/Citi/B//r/M/4;1019/Jefferies/S/68/d/MS/3;1012/Goldman Sachs/B/77/d/MS/;1009/Barclays/B/90/r/MS/;1008/BNP Paribas/B//u/MS/;1019/Citizens JMP/B/70/d/M/4
+QXO,NYSE,PRZEM,USD,10.6,7,7,2,5,0,6,18.5,18.27,15,26,-49,0,3,6,0,0,72,100,69,0,24.61,-27.3,3,77,2.3,-11,19.0,1016/Wells Fargo/B/15/d/M/3;1007/RBC/B/18/d/M/;1006/Melius/B/17/r/M/;0824/Loop Capital/B/26/r/S/;0824/William Blair/B//r/S/;1009/DA Davidson//20/r/M/2
+AXON,NASDAQ,PRZEM,USD,398.62,8,9,5,3,0,7,678,678,470,825,-12,1,2,7,1,0,82,86,77,0,698,-2.3,3,89,3.0,-12,24.0,1013/TD Cowen/B/825/r/MS/3;1013/UBS/H/470/d/S/;0929/RBC/B/735/r/S/;0917/Citi/B//r/M/;0826/Barclays/B/688/r/S/;1015/Raymond James/B/675/d/MS/3
+KGX,XETR,PRZEM,EUR,34.99,4,6,3,0,1,4,59,59.63,54,62,-31,1,4,4,0,0,59,100,64,0,51.15,10.2,2,89,,4,19.0,1005/Deutsche Bank/B/60/d/EX34/;1002/JPMorgan/B/60/d/EW/;0908/Citi/B/62/u/EX35/;1015/MPCM/B/54/d/EX36/
+AVAV,NASDAQ,PRZEM,USD,117.88,13,15,7,5,1,12,210,210,165,285,-21,2,5,10,3,0,97,76,84,0,212,-11.1,7,85,3.7,10,25.0,1016/Citi/B//r/M/4;1009/Barclays/H/237/r/MS/3;0921/Bank of America/B/185/d/MS/;0917/Goldman Sachs/B/285/d/MS/;0916/Jefferies/B/204/d/MS/;0910/JPMorgan/B/210/u/M/
+XYL,NYSE,PRZEM,USD,104.32,8,8,6,2,0,7,135,134,110,150,-64,1,6,5,3,0,83,63,58,0,144,-11.4,7,91,2.7,-6,24.0,1015/Mizuho/H/110/d/M/3;1013/Barclays/B/139/d/M/;1012/Citi/B/148/d/M/;1005/UBS/H/112/d/M/;0824/Jefferies/B/150/u/MS/;1014/RBC/B/135/d/M/2
+GXO,NYSE,PRZEM,USD,48.62,5,5,4,1,0,5,63.8,63.98,60,68,17,1,1,5,0,0,68,100,64,0,68.47,-3.2,1,95,3.5,8,18.0,1014/Goldman Sachs/B/61/u/MS/3;1007/Citi/B/65/r/S/;1006/Wells Fargo/B/65/r/S/;1005/JPMorgan/B/68/r/S/;1002/Susquehanna/B/60/d/MS/4
+AMTM,NYSE,PRZEM,USD,19.59,1,1,1,0,0,1,20,20,20,20,100,1,0,0,1,0,31,0,40,0,29.33,-4.8,1,100,5.0,-18,13.0,1006/BNP Paribas/H/20/u/M/5
+OTIS,NYSE,PRZEM,USD,71.83,2,2,2,0,0,1,77,77,77,77,-75,0,1,1,0,1,43,0,28,0,85,,0,100,3.0,-10,18.0,0924/Wells Fargo/S/77/d/M/3;0921/Bernstein/B//r/M/3
+ROL,NYSE,PRZEM,USD,33.14,11,14,8,3,0,10,34,33.95,27,43,-82,0,11,2,7,2,94,-3,44,0,39.44,-17.8,11,93,3.3,-12,22.0,1015/Citi/H/32/d/M/4;1019/Bernstein/H/35/d/M/3;1014/UBS/H/36/d/MS/;1013/JPMorgan/H/35/d/MS/;1013/Morgan Stanley/B/43/d/MS/;1005/Bank of America/S/28/d/S/
+LDOS,NYSE,PRZEM,USD,126.53,5,5,5,0,0,5,136,136,130,142,-70,1,4,1,4,0,70,22,41,0,152,-5.9,5,100,3.3,-22,20.0,1007/Citi/B/141/d/M/4;1008/JPMorgan/H/142/d/M/3;1006/Jefferies/H/130/d/M/;1006/TD Cowen/H/130/d/M/3;0918/Bank of America/H/135/u/M/
+FMC,NYSE,PRZEM,USD,5.36,6,6,5,1,0,6,11.67,11.41,9,16,-52,1,4,2,4,0,75,29,65,0,8.98,-19.1,4,97,3.3,-5,20.0,1005/UBS/H/10/d/MS/4;1015/RBC/H/9/d/M/3;1013/Mizuho/B/12/d/MS/3;1006/BMO/H/11/d/S/;0825/Bank of America/H/12/r/S/;0911/KeyBanc/B/16/u/MS/
+SMR,NYSE,ENER,USD,5.59,2,2,2,0,0,2,5.5,5.52,5,6,-100,0,2,0,0,2,44,-100,16,0,11.37,-40.0,1,100,3.5,-40,18.0,0911/UBS/S/6/d/MS/4;1020/Barclays/S/5/d/M/3
+EOSE,NASDAQ,ENER,USD,1.74,5,6,1,3,1,4,6.62,6.86,4.5,9,12,2,2,3,2,0,59,61,65,0,6,-12.2,3,71,3.5,3,11.0,1005/TD Cowen/H//u/M/3;1019/Needham/B/6/d/MS/4;0911/Stifel/B/9/r/S/;0910/Truist/B/7/r/S/;0910/Roth/H/4.5/u/MS/
+XE,NASDAQ,ENER,USD,10.53,4,4,1,2,1,4,30.5,32.37,9,57,-14,1,1,3,0,1,51,54,58,0,31.14,-17.1,1,68,2.5,-12,8.0,1014/Morgan Stanley/B/34/d/M/3;0908/Guggenheim/B/57/r/MS/;0908/Piper Sandler/S/9/r/MS/2;0914/Texas Capital/B/22/u/MS/
+BE,NYSE,ENER,USD,222,11,12,8,2,1,10,305,309,240,351,68,8,0,5,6,0,93,48,79,0,300,16.9,7,88,2.5,22,35.0,1015/Morgan Stanley/B/310/r/S/;1009/RBC/B/335/r/MS/;1007/Bernstein/H/282/r/MS/;1007/UBS/B/350/u/MS/;1005/TD Cowen/H//u/M/;1001/Barclays/H/308/u/MS/
+FRMI,NASDAQ,ENER,USD,2.98,1,1,0,1,0,1,8,8,8,8,-100,0,1,1,0,0,24,100,37,0,14.12,-33.3,1,84,5.0,-30,8.0,1016/Cantor Fitzgeral/B/8/d/M/5
+NNE,NASDAQ,ENER,USD,12.89,5,5,0,3,2,4,39.75,38.56,33,50,0,0,0,3,1,0,54,69,62,0,37.62,,0,61,4.0,-11,8.0,1001/Susquehanna//39/r/M/4;0921/Needham/B/33/r/MS/4;0825/Truist/H//r/S/;0825/HC Wainwright/B/50/r/S/;0825/Northland/B/37/r/S/
+UUUU,AMEX,ENER,USD,8.37,3,3,1,1,1,3,25.33,23.3,14,33,-29,1,1,3,0,0,45,100,56,0,24.52,-11.1,2,71,4.0,-17,9.0,1014/BMO/B/14/d/S/;0902/Cantor Fitzgeral/B/33/r/S/;0901/HC Wainwright/B/29/u/MS/4
+USAR,NASDAQ,ENER,USD,10.13,2,2,1,0,1,2,33,27.86,21,45,0,0,0,2,0,0,34,100,53,0,35.5,,0,70,3.0,-19,7.0,0902/Jefferies/B/21/r/MS/3;0825/Northland/B/45/r/S/
+NB,NASDAQ,ENER,USD,3.06,1,1,1,0,0,1,4.7,4.7,4.7,4.7,0,0,0,0,1,0,27,0,41,0,10.52,,0,100,3.0,4,6.0,0902/Jefferies/H/4.7/r/M/3
+OKLO,NYSE,ENER,USD,27.56,3,4,1,2,0,3,47,45.81,41,51,-55,0,2,1,1,0,47,36,50,0,69.44,-18.2,2,79,2.7,-24,21.0,0925/UBS/H/41/d/M/4;1019/Piper Sandler/B/49/d/MS/2;0928/Truist//51/r/M/2
+MWH,NASDAQ,ENER,USD,22.98,1,1,1,0,0,1,35,35,35,35,100,1,0,1,0,0,27,100,57,0,41.4,9.4,1,100,3.0,-3,10.0,0825/TD Cowen/B/35/u/M/3
+TMC,NASDAQ,ENER,USD,2.62,3,3,0,1,2,3,10.67,10.51,10,12,0,0,0,3,0,0,37,100,55,0,11.05,,0,52,4.0,-3,5.0,0828/Stifel/B/10/r/MS/4;0926/Maxim/B/10/r/S/;0922/HC Wainwright/B/12/r/S/
+MP,NYSE,ENER,USD,39.46,5,5,2,2,1,4,67.5,68.46,57,82,-45,0,2,4,1,0,61,89,63,0,69.29,-14.2,2,76,3.0,-14,18.0,1007/Morgan Stanley/B/66/d/M/3;0908/Jefferies/B//r/M/;1001/Baird/B/65/d/M/3;0821/DA Davidson/B/82/r/MS/;0916/Freedom Capital/H/57/r/MS/
+AMPX,NYSE,ENER,USD,7.6,7,7,0,4,3,6,20.17,19.81,14,25,0,0,0,6,0,0,63,100,69,0,22.82,,0,58,3.5,-3,12.0,0929/National Bank//18/r/M/4;1014/Canaccord/B/14/r/M/3;0930/Cantor Fitzgeral/B/25/r/S/;0929/William Blair/B//r/S/;0929/HC Wainwright/B/18/r/MS/;0929/Roth/B/22/r/S/
+NG,AMEX,ENER,USD,6.62,1,1,1,0,0,1,13,13,13,13,-100,0,1,1,0,0,27,100,39,0,14.19,-4.4,1,100,3.0,-4,6.0,1007/Morgan Stanley/B/13/d/M/3
+CEG,NASDAQ,ENER,USD,261.3,9,10,8,1,0,7,345,344,296,380,-10,1,2,8,1,0,89,89,70,0,345,-8.6,3,98,3.3,3,26.0,1008/Citi/B//r/M/4;1007/Goldman Sachs/H/305/r/S/;1007/Morgan Stanley/B/369/u/MS/;1007/Scotiabank/B/355/d/S/;1006/Bernstein/B/296/r/M/3;1002/BMO/B/350/d/MS/
+IPX,NASDAQ,ENER,USD,13.99,2,2,1,1,0,2,30,29.48,26,34,-41,0,1,2,0,0,40,100,52,0,41.45,-34.6,1,88,3.5,-2,6.0,0902/Jefferies/B/26/r/MS/3;0930/B. Riley/B/34/d/M/4
+VST,NYSE,ENER,USD,150.31,8,9,5,1,2,8,200,200,169,227,0,1,1,7,0,0,80,100,69,0,213,-1.0,2,85,3.0,-8,24.0,1012/Wells Fargo/B/212/r/S/;1005/BMO/B/210/d/MS/3;1001/Bernstein/B/181/r/MS/;0921/Morgan Stanley/B/227/u/MS/;0824/Mizuho/B/169/r/MS/;1015/CIBC/B/201/r/MS/3
+BWXT,NYSE,ENER,USD,135.09,10,12,6,3,1,9,194,191,165,235,-27,1,5,7,3,0,88,69,70,0,210,-13.9,6,85,3.3,-11,21.0,1013/JPMorgan/B/190/d/M/3;0930/Bank of America/B/210/d/M/;0930/Citi/B//r/M/;0924/BNP Paribas/H/165/d/M/;0903/Jefferies/B/181/r/M/;0827/Wells Fargo/H/170/u/M/
+NRG,NYSE,ENER,USD,99.75,4,5,2,1,1,3,158,153,131,184,-47,0,2,2,1,0,56,56,55,0,187,-1.8,2,81,3.0,-26,20.0,1019/Jefferies//131/r/M/3;0918/Morgan Stanley/H/159/d/MS/;1016/CIBC/B//r/M/3;0909/Siebert Williams/B/184/r/S/
+EXE,NASDAQ,ENER,USD,92.56,13,13,9,3,1,13,126,126,111,141,-33,3,7,12,1,0,99,91,75,0,122,-2.8,9,90,3.7,1,33.0,1015/UBS/B/120/d/M/4;1014/Scotiabank/B/111/r/M/4;1015/Morgan Stanley/B/124/d/M/3;1006/Mizuho/B/138/d/M/;1005/Bernstein/B/127/d/M/;1001/Jefferies/B/136/d/M/
+RUN,NASDAQ,ENER,USD,7.42,6,8,5,1,0,6,11.17,11.09,7,14,-74,0,6,3,3,0,75,48,60,0,14.32,-17.0,6,96,3.5,-18,23.0,1014/Morgan Stanley/H/10/d/M/3;1009/Barclays/H/12/d/MS/;1009/Citi/B/14/d/M/;1009/Jefferies/H/7/r/M/;1008/Goldman Sachs/B/11/d/MS/;1014/Susquehanna/B/13/d/M/4
+AR,NYSE,ENER,USD,38.51,10,11,7,3,0,10,49.2,49.32,42,56,-20,3,5,8,2,0,91,82,68,0,50.14,-1.4,8,92,3.5,5,26.0,1014/Scotiabank/B/46/r/MS/4;1015/Morgan Stanley/B/51/u/MS/3;1008/Mizuho/B/51/d/MS/;1006/UBS/B/54/d/MS/;1005/Barclays/H/45/r/S/;1002/Jefferies/B/56/d/MS/
+CRK,NYSE,ENER,USD,14.04,10,10,7,2,1,9,14.56,14.5,11,17,11,3,2,0,7,3,89,-35,49,0,16.19,15.4,5,89,3.3,-11,20.0,1014/Scotiabank/S/11/r/M/4;1016/Mizuho/H/17/d/M/3;1015/Morgan Stanley/H/13/d/M/3;0925/Jefferies/H/14/r/M/;0909/UBS/S/14/u/M/;0902/BMO/H/17/u/M/
+DVN,NYSE,ENER,USD,50.03,15,15,11,3,1,15,63.13,63.1,55,67,33,7,3,15,0,0,100,100,78,0,61.93,1.5,9,92,3.3,7,35.0,1014/Scotiabank/B/61/u/M/4;1016/Mizuho/B/65/d/M/3;1015/Morgan Stanley/B/65/u/M/3;1009/Barclays/B/60/u/MS/;1007/UBS/B/65/u/MS/;1006/BMO/B/67/r/M/
+EOG,NYSE,ENER,USD,155.96,12,12,7,5,0,12,166,165,144,187,48,7,1,4,7,0,95,36,63,0,168,6.7,7,88,3.5,-2,39.0,1015/Mizuho//165/r/M/3;1015/Morgan Stanley/H/163/u/M/;1014/Scotiabank/H/144/r/M/;1009/UBS/B/186/u/M/;1003/Jefferies/B/185/r/M/;0827/Citi/H/150/u/M/
+FANG,NASDAQ,ENER,USD,201.84,11,11,8,3,0,9,235,235,215,259,40,5,1,9,2,0,94,80,70,0,240,3.7,6,93,3.5,-10,38.0,1014/Scotiabank/B/250/r/M/4;1015/Morgan Stanley/H/222/u/M/3;1014/RBC/B/240/r/M/;1011/Jefferies/H/215/u/M/;1002/BMO/B/224/u/M/;1001/Goldman Sachs/B/215/d/M/
+PR,NYSE,ENER,USD,24.53,12,13,7,5,0,12,28.33,28.26,27,30,68,9,0,12,0,0,96,100,75,0,28.52,14.7,9,89,3.7,-1,28.0,1014/Scotiabank/B/29/r/M/4;1015/Morgan Stanley/B/27/u/M/3;1014/Wells Fargo/B/28/u/MS/;1012/Citi/B/28/u/M/;0924/RBC/B/27/r/M/;0914/UBS/B/29/u/M/
+MDWD,NASDAQ,ZDR,USD,12.56,4,4,1,0,3,3,29.33,27.91,25,36,18,1,0,4,0,0,45,100,61,0,30.67,22.7,1,54,2.5,-4,6.0,0924/TD Cowen/B/25/r/MS/3;1001/HC Wainwright/B/36/r/S/;0923/Craig-Hallum/B//r/S/;0916/Alliance Global/B/27/u/MS/2
+CRSP,NASDAQ,ZDR,USD,49.6,10,13,5,4,1,9,74,73.59,52,88,-14,1,2,7,3,0,87,66,74,0,82.95,-1.2,1,83,4.0,8,23.0,1015/UBS/H/52/d/M/4;1009/Bank of America/B/81/d/S/;1002/Wells Fargo/H/75/r/S/;0928/Citi/B/88/r/MS/;0831/Evercore/B/76/r/S/;1014/Truist/H/52/r/S/
+SMMT,NASDAQ,ZDR,USD,15.72,12,15,8,2,2,7,28.71,28.97,12,43,16,3,1,8,3,0,95,70,86,0,30.06,13.7,3,87,3.5,-1,18.0,1005/Bernstein/H/12/u/MS/3;1001/Barclays/H/20/u/M/;0929/Goldman Sachs/B/41/r/M/;0929/Jefferies/B/30/r/M/;0929/Morgan Stanley/B//d/M/;0925/Citi/B/43/u/MS/
+NTLA,NASDAQ,ZDR,USD,11.8,5,5,2,2,1,4,19,17.49,8,30,-21,1,1,3,1,1,62,30,57,0,22.88,8.3,1,77,3.5,-23,20.0,1006/Barclays/S/8/d/M/3;0825/Citi/B//r/M/;0909/Citizens JMP/B/30/r/M/4;0909/Wedbush/H/13/u/M/;0909/HC Wainwright/B/25/r/M/
+ABCL,NASDAQ,ZDR,USD,11.56,3,3,3,0,0,3,16,16.06,13,18,0,0,0,2,1,0,55,68,56,0,16.82,,0,100,3.5,-2,13.0,1012/UBS/B/18/r/M/4;0929/JPMorgan/B/17/r/M/3;0924/Goldman Sachs/H/13/r/M/
+FIE,XETR,ZDR,EUR,38.9,4,7,1,2,1,3,53.33,54.42,43,62,-39,0,2,3,1,0,52,75,51,0,53.11,-8.6,2,70,,-2,10.0,0901/Deutsche Bank/B/62/d/EWX37/;0922/Berenberg/B/55/r/EWX38/;0825/DZ Bank/H/43/d/EW/;0827/mwb research/B//r/EW/
+EYPT,NASDAQ,ZDR,USD,0.4618,1,1,1,0,0,1,4,4,4,4,-100,0,1,0,1,0,27,0,33,0,12.39,,0,100,3.0,-32,13.0,0902/TD Cowen/H/4/d/MS/3
+EL,EURONEXT,ZDR,EUR,151.2,10,11,6,2,2,8,215,212,135,280,-62,0,6,7,2,1,87,59,64,0,219,-17.0,5,82,,-6,22.0,0930/Barclays/B/260/d/EW/;0925/Bernstein/H/185/d/EW/;0925/Goldman Sachs/H/165/d/EW/;0925/Jefferies/B/250/r/EW/;0922/RBC/B/190/d/EW/;0918/UBS/B//r/EW/
+RLAY,NASDAQ,ZDR,USD,18.37,10,10,5,3,2,7,27.14,27.72,20,31,52,5,0,10,0,0,85,100,83,1,27.58,13.7,5,79,4.0,1,13.0,0814/JPMorgan/B/31/u/MS/;0810/Citi/B//r/M/;0807/Bank of America/B/25/u/S/;0807/Barclays/B/30/u/MS/;0807/TD Cowen/B//r/S/;0810/Citizens JMP/B/26/u/MS/
+BNTX,NASDAQ,ZDR,USD,89.71,6,7,3,3,0,4,123,120,105,140,-52,0,3,3,2,0,70,61,56,0,118,-7.3,3,85,3.0,-13,23.0,1007/Morgan Stanley/B/114/d/MS/3;0916/UBS/B//r/M/;0908/BMO/H/105/d/M/;1014/Canaccord/B/132/d/M/3;1008/Argus/H//r/M/3;0916/Berenberg//140/r/M/
+ZTS,NYSE,ZDR,USD,79.83,6,6,3,3,0,4,94.25,94.27,74,115,-49,0,2,2,3,0,70,45,49,0,87.82,-9.6,1,85,3.0,-15,18.0,1016/Goldman Sachs/H/74/d/M/3;1016/JPMorgan/B/115/r/S/;0825/TD Cowen/B/94/d/MS/3;1001/Leerink/H//r/S/;0918/Stifel/H//r/S/;0825/Cantor Fitzgeral//94/r/M/
+ARDX,NASDAQ,ZDR,USD,3.17,7,7,2,4,1,7,12.86,12.28,9,16,-79,0,5,7,0,0,72,100,66,1,12.8,-17.9,5,75,3.5,0,11.0,0810/Citi/B/11/d/MS/;0807/TD Cowen/B/10/d/MS/;0818/Wedbush/B/9/r/MS/5;0807/BTIG/B/14/d/M/;0807/Raymond James/B/15/d/S/;0817/Piper Sandler/B/15/d/MS/2
+VIR,NASDAQ,ZDR,USD,10.73,5,5,1,3,1,4,21.75,22.6,17,30,11,1,0,5,0,0,59,100,68,0,21,10.0,1,71,4.0,-6,10.0,1008/Barclays/B/30/r/S/;0930/Leerink/B/17/r/S/;0928/Needham/B/18/r/S/;0928/Raymond James/B//r/M/;1007/HC Wainwright/B/22/u/MS/4
+SHL,XETR,ZDR,EUR,41.48,4,6,3,1,0,4,48.1,48.76,40,57.4,12,1,0,3,1,0,60,81,53,0,45.09,2.6,1,92,,-9,22.0,0929/JPMorgan/B/57.4/r/EW/;0928/Jefferies/B/50/r/EW/;0922/RBC/B/45/r/EW/;0911/Berenberg/H/40/u/EW/
+XRAY,NASDAQ,ZDR,USD,8.65,6,6,4,2,0,6,12,12.14,10,17,-26,1,3,1,4,1,72,0,56,0,12.57,-10.9,4,88,2.3,5,19.0,1012/Bank of America/B/17/r/S/;0917/BMO/H/10/d/MS/3;0917/JPMorgan/H/12/r/S/;0821/Barclays/S/11/u/MS/;1014/Leerink/H/10/d/MS/2;1009/Piper Sandler/H/12/d/MS/2
+ARCT,NASDAQ,ZDR,USD,11.39,5,6,1,3,1,4,25,22.85,19,41,42,3,1,5,0,0,59,100,71,0,23.8,72.0,4,71,3.3,-4,13.0,0924/Citi/B/20/u/MS/;0924/Cantor Fitzgeral/B//r/M/5;0924/BTIG/B/20/d/M/3;1009/Leerink/B/19/u/M/2;0902/Roth/B/41/u/MS/
+BDX,NYSE,ZDR,USD,193.15,2,2,2,0,0,2,182,183,165,200,-25,1,1,0,1,1,44,-48,27,0,193,8.1,1,100,3.5,-38,19.0,0831/Bank of America/H/200/u/M/4;1007/Barclays/S/165/d/M/3
+GEHC,NASDAQ,ZDR,USD,70.3,8,9,6,2,0,6,78.17,77.52,71,93,-2,1,2,5,3,0,83,59,57,0,82.42,-5.2,2,92,3.0,1,25.0,1007/Barclays/B//u/M/3;1005/Citi/H/71/d/M/;1005/RBC/B//r/M/;0914/BMO/H/71/r/S/;0914/Bank of America/H/74/r/S/;0825/Wells Fargo/B/85/r/S/
+MDT,NYSE,ZDR,USD,94.3,15,17,9,6,0,14,103,104,85,118,32,6,1,7,6,0,100,58,67,0,104,10.1,6,88,3.0,-2,31.0,1014/UBS///r/M/4;1007/Barclays/H/95/u/MS/;1005/Citi/B/110/r/S/;1001/RBC/B/118/r/MS/;0930/TD Cowen/B/110/r/MS/;0914/Bank of America/B/110/u/MS/
+BSX,NYSE,ZDR,USD,45.88,13,16,9,4,0,12,54.5,54.27,48,65,-37,1,8,8,3,0,99,70,65,0,58.11,-10.9,8,90,2.7,-1,34.0,1013/Mizuho//55/r/M/3;1007/Barclays/H//u/M/;1007/Evercore/B/52/d/M/;1005/Citi/H/48/d/MS/;1003/Bernstein/B/54/d/M/;0923/Wells Fargo/H/48/d/M/
+DHR,NYSE,ZDR,USD,225.68,10,11,9,1,0,10,244,244,210,255,72,8,0,10,0,0,92,100,71,0,244,14.8,8,97,3.0,13,29.0,1013/TD Cowen/B/255/u/M/3;1012/Morgan Stanley/B/240/u/M/3;1009/Bank of America/B/255/u/S/;1007/Barclays/B/255/u/MS/3;1005/Goldman Sachs/B/250/u/MS/;1005/RBC/B/250/u/MS/
+ABT,NYSE,ZDR,USD,103.29,10,11,7,3,0,9,125,124,112,135,10,1,0,10,0,0,90,100,69,0,121,6.7,1,92,3.3,-5,31.0,1016/TD Cowen/B/135/r/MS/3;1007/Barclays/B/120/r/M/3;0910/Citi/B/125/r/S/;0909/Wells Fargo/B/112/r/S/;0901/JPMorgan/B//r/S/;0821/Bank of America/B/115/r/S/
+OMCL,NASDAQ,ZDR,USD,36.75,1,1,0,1,0,1,65,65,65,65,0,0,0,1,0,0,19,100,45,0,57.86,,0,63,2.0,0,8.0,0824/KeyBanc/B/65/r/MS/2
+SYK,NYSE,ZDR,USD,302.75,10,11,6,4,0,8,333,333,298,385,-45,1,7,7,3,0,89,69,56,0,364,-10.7,7,88,3.0,-6,32.0,1007/Barclays/B//u/M/3;1007/Bernstein/H//r/M/3;0922/TD Cowen/H/298/d/M/;0910/Citi/B/360/d/M/;0909/BMO/B/317/r/M/;0909/Wells Fargo/B/348/d/M/
+UHS,NYSE,ZDR,USD,185.06,4,4,2,2,0,3,232,235,200,290,21,1,0,2,2,0,59,48,54,0,195,3.5,1,88,4.0,-2,22.0,0904/JPMorgan/H/200/r/S/;0831/UBS/B/290/r/MS/;1002/Cantor Fitzgeral/H//r/M/5;0918/Leerink/B/205/u/M/3
+TEM,NASDAQ,ZDR,USD,67.73,11,12,3,6,2,11,76.18,76.4,66,95,44,5,0,5,5,0,86,44,62,0,74.94,33.9,5,73,3.0,8,23.0,1014/JPMorgan/H/70/u/M/3;0921/Goldman Sachs/H/75/r/M/;0909/UBS/H/70/r/MS/;1012/Canaccord/B/95/u/MS/3;1001/Guggenheim/B/92/u/M/;0908/Rothschild Redbu/H/67/r/MS/
+CI,NYSE,ZDR,USD,305.65,5,7,4,1,0,4,344,342,290,381,11,1,0,4,1,0,68,79,54,0,342,6.9,1,95,3.0,-4,28.0,1001/UBS/B//r/M/4;1002/Bernstein/B/381/r/MS/3;1001/RBC/B/337/r/M/;0909/Evercore/H/290/r/MS/;1002/Piper Sandler/B/370/u/MS/2
+PODD,NASDAQ,ZDR,USD,144.22,2,2,2,0,0,1,190,190,190,190,25,1,1,1,1,0,43,50,49,0,165,-30.9,1,100,3.0,-10,29.0,1012/Jefferies/B/190/d/M/3;1007/Barclays/H//u/M/3
+BMRN,NASDAQ,ZDR,USD,55.95,8,9,4,3,1,6,94.33,97.78,60,114,53,5,1,6,2,0,79,83,82,0,91.69,-4.2,4,82,3.3,-5,31.0,1015/UBS/B/88/d/M/4;1014/Barclays/B/114/u/M/3;0916/BMO/B//r/M/;0831/Jefferies/B/105/u/M/;1012/Raymond James/B/109/u/M/3;0923/William Blair/H//u/M/
+IRTC,NASDAQ,ZDR,USD,113.47,5,6,1,4,0,4,175,173,150,196,-21,1,2,5,0,0,61,100,63,0,171,-5.7,3,75,2.5,-15,17.0,1006/Wells Fargo/B/150/d/MS/3;1005/Needham/B/194/u/M/;0904/William Blair/B//r/S/;0827/Canaccord/B/196/d/S/;1016/Piper Sandler/B/160/r/M/2
+GILD,NASDAQ,ZDR,USD,156.13,11,13,9,2,0,11,164,164,126,177,31,5,1,10,1,0,95,91,66,0,161,4.7,6,96,3.7,1,30.0,1020/Bank of America/B/172/u/M/4;1007/JPMorgan/B/170/u/M/;1007/Morgan Stanley/B/163/d/MS/;0910/HSBC/B/175/u/MS/;0907/Bernstein/B/160/r/S/;0831/Mizuho/B/170/r/S/
+ATEC,NASDAQ,ZDR,USD,10.88,10,10,4,4,2,10,15.6,15.01,12,24,30,3,1,10,0,0,84,100,76,1,15.79,4.1,4,77,3.3,-3,14.0,0805/UBS/B/16/u/MS/4;0805/BMO/B/12/u/MS/3;0805/TD Cowen/B/13/u/M/3;0805/Wells Fargo/B/14/r/S/;0805/Canaccord/B/19/d/S/;0805/Needham/B/14/r/S/
+AORT,NYSE,ZDR,USD,23.17,6,7,0,4,2,6,41.83,41.81,38,45,7,1,1,6,0,0,59,100,68,1,40.91,-2.3,2,60,3.0,0,9.0,0818/Canaccord/B/40/u/MS/3;0807/Needham/B/44/r/S/;0807/Oppenheimer/B/38/r/S/;0807/Stifel/B/45/r/S/;0807/Ladenburg/B/39/d/S/;0807/Lake Street/B/45/r/S/
+VNA,XETR,FIN,EUR,16.52,6,10,4,2,0,6,24.15,23.64,18.4,34.5,-66,0,6,4,1,1,72,44,57,0,24.02,-17.8,6,90,,-11,20.0,1019/JPMorgan/B/26/d/EWX39/;1014/Jefferies/B/23/d/EWX40/;1012/Goldman Sachs/H/18.4/d/EWX41/;0824/Barclays/S/20/r/EW/;1012/Oddo BHF/B/23/d/WX41/;0922/Berenberg/B/34.5/r/EW/
+OPEN,NASDAQ,FIN,USD,2.08,4,4,2,1,1,2,6,6.47,5,7,-45,0,2,2,2,0,56,43,56,0,4.27,-20.5,2,79,3.0,-9,10.0,0911/Citi/H//r/M/4;0911/JPMorgan/B/7/d/M/3;0911/Citizens JMP/H//r/M/;0918/Alliance Global/B/5/d/MS/2
+ADYEN,EURONEXT,FIN,EUR,925.2,3,3,2,1,0,3,1400,1389,1300,1500,-63,0,2,3,0,0,51,100,53,0,1541,-14.5,2,90,,-28,36.0,0903/Morgan Stanley/B/1300/d/EW/;0821/Evercore/B/1400/r/EW/;0908/Kepler Cheuvreux/B/1500/d/W/
+LEG,XETR,FIN,EUR,46.46,3,5,3,0,0,3,55.77,55.77,44.3,72,-80,0,4,1,2,0,54,33,38,0,64.22,-15.3,4,100,,-28,14.0,1014/Jefferies/B/72/d/WX42/;1012/Goldman Sachs/H/44.3/d/EWX43/;0824/Barclays/H/51/d/EW/
+KSPI,NASDAQ,FIN,USD,93.34,1,1,0,1,0,1,115,115,115,115,100,1,0,1,0,0,22,100,48,0,107,4.5,1,77,4.0,-1,7.0,0825/Wolfe Research/B/115/u/M/4
+PGY,NASDAQ,FIN,USD,18.38,1,1,1,0,0,1,25,25,25,25,-100,0,1,1,0,0,27,100,33,0,29.17,-3.8,1,100,3.0,-30,12.0,1006/TD Cowen/B/25/d/M/3
+SCHW,NYSE,FIN,USD,90.8,17,23,12,5,0,14,117,118,95,147,-9,5,8,11,3,1,100,65,72,0,117,-2.8,12,90,2.5,56,26.0,1016/Barclays/B/115/d/MS/;1016/Citi/B//r/M/;1016/Deutsche Bank//125/r/M/3;1016/Goldman Sachs/B/117/r/M/;1016/JPMorgan/B/147/r/MS/;1016/Jefferies//120/r/M/
+AFRM,NASDAQ,FIN,USD,75,22,22,12,10,0,18,99.22,99.37,82,115,50,13,2,18,3,0,100,84,81,0,99.47,6.5,14,87,3.7,-5,38.0,1013/Goldman Sachs/B/103/d/M/3;1006/TD Cowen/B/110/d/M/3;0909/BMO/B//r/M/;0902/Scotiabank/B/95/r/M/;0831/Bernstein/B/110/u/M/;0828/Bank of America/B/104/u/M/
+RKT,NYSE,FIN,USD,11.3,4,4,4,0,0,4,14.12,14.12,12.5,16,-100,0,4,2,2,0,63,50,43,0,15.92,-12.9,4,100,3.0,-23,18.0,1012/JPMorgan/H/12.5/d/M/3;1012/Morgan Stanley/B/16/d/M/3;1006/Wells Fargo/H/13/d/M/;1005/Barclays/B/15/d/M/
+EVR,NYSE,FIN,USD,254.63,4,4,4,0,0,3,321,321,315,331,-75,0,3,1,3,0,63,25,44,0,335,-12.3,3,100,3.0,4,12.0,1008/Morgan Stanley/H/315/d/M/3;1007/UBS/H/318/d/M/;1001/Goldman Sachs/B/331/d/M/;0826/BMO/H//r/M/
+OTF,NYSE,FIN,USD,9.05,6,6,3,3,0,4,13.75,13.51,12,17,14,1,0,4,2,0,72,68,69,1,13.61,6.2,1,88,3.7,3,9.0,0807/Citi/B//r/M/4;0817/RBC/H/12/r/M/3;0807/Wells Fargo/B/12/r/S/;0807/Citizens JMP/B/17/u/MS/4;0810/Oppenheimer/H/14/r/S/;0806/Truist/B//r/S/
+HYQ,XETR,FIN,EUR,80,1,2,0,1,0,1,185,185,185,185,0,0,0,1,0,0,21,100,46,0,141,,0,70,,-13,5.0,0925/Berenberg/B/185/r/EW/
+MFA,NYSE,FIN,USD,6.61,1,1,0,1,0,1,9.5,9.5,9.5,9.5,-100,0,1,1,0,0,21,100,32,0,9.25,-9.5,1,70,3.0,-25,6.0,1006/BTIG/B/9.5/d/M/3
+ZG,NASDAQ,FIN,USD,32.77,7,7,5,2,0,6,51.33,51.04,35,80,0,0,0,4,2,0,77,62,72,0,44.64,,0,89,2.3,-7,29.0,0911/RBC/B/55/r/MS/3;0910/Bernstein/H/38/r/S/;0825/Wells Fargo/H/35/r/S/;0824/Citi/B/52/r/S/;0824/Deutsche Bank//80/r/M/2;0824/Benchmark/B//r/M/
+STNE,NASDAQ,FIN,USD,11.87,1,2,1,0,0,1,13,13,13,13,-50,0,1,1,0,0,29,100,33,0,15.1,-13.3,1,100,4.0,-8,17.0,1015/UBS/B/13/d/MS/4
+FISV,NASDAQ,FIN,USD,48.29,10,11,6,4,0,9,57,56.41,48,80,-57,0,6,2,7,1,90,7,52,0,55.77,-10.8,5,91,4.3,-17,39.0,1016/Citi/H/53/d/M/4;1015/Bank of America/S/48/r/M/4;1009/Barclays/H/50/d/MS/;1009/TD Cowen/H/49/d/MS/;1005/Wells Fargo/H/56/r/S/;0903/Mizuho/B/78/r/S/
+FIS,NYSE,FIN,USD,36.69,14,15,8,6,0,13,43.38,43.18,37,54,-67,1,10,5,8,0,100,39,59,0,46.28,-12.4,11,89,4.3,-12,34.0,1016/Citi/H/39/d/M/4;1015/Bank of America/B/42/r/M/;1013/Goldman Sachs/B/44/d/M/;1009/Barclays/H/38/d/M/;1009/TD Cowen/B/47/d/MS/;0929/Deutsche Bank/H/40/d/M/
+FICO,NYSE,FIN,USD,792.82,17,19,9,4,4,15,1080,1055,700,1600,-72,0,12,10,2,1,100,72,68,0,1042,-24.9,11,81,2.7,-11,26.0,1019/Mizuho/B/1063/d/M/3;1002/Barclays/B/875/d/MS/;0930/BMO/B/1150/d/M/;0930/Bank of America/H/700/d/M/;0930/Wells Fargo/B/950/d/MS/;0929/Goldman Sachs//1322/r/M/
+G24,XETR,FIN,EUR,81.45,7,9,5,2,0,6,113,111,90,140,0,1,1,7,0,0,78,100,69,0,106,-0.0,2,91,,-14,21.0,1002/Bernstein/B/90/r/EW/;1001/Deutsche Bank/B/126/r/EW/;0928/Goldman Sachs/B/108/u/EW/;0928/JPMorgan/B//r/W/;0908/Jefferies/B/102.5/d/EW/;0925/Berenberg/B/140/r/W/
+BR,NYSE,FIN,USD,179.83,1,1,1,0,0,1,226,226,226,226,100,1,0,1,0,0,25,100,50,0,208,0.4,1,90,2.0,-13,12.0,0828/RBC/B/226/u/MS/2
+CSGP,NASDAQ,FIN,USD,32.88,3,3,1,2,0,3,35.33,35.25,33,40,42,1,0,1,1,0,48,44,45,0,36.58,6.5,1,80,3.0,2,24.0,0824/BMO/H/33/u/M/;1006/Needham/B/40/r/M/4;0824/KeyBanc//33/r/M/2
+</script>
+<script>
+(function(){
+  var SEC={TOP:"Top 40",TECH:"Technologia",KONS:"Konsument",MOTO:"Motoryzacja",PRZEM:"Przemysł i obrona",ENER:"Energia i surowce",ZDR:"Zdrowie",FIN:"Finanse"};
+  var num=function(x){return x===""||x==null?null:+x};
+  var NAMES={"MU": "Micron Technology", "AMZN": "Amazon", "ORCL": "Oracle", "COIN": "Coinbase", "ASML": "ASML Holding", "GOOG": "Alphabet", "META": "Meta Platforms", "UNH": "UnitedHealth", "SPCX": "Space Exploration Technologies", "AAPL": "Apple", "TSLA": "Tesla", "NKE": "Nike", "CRM": "Salesforce", "MA": "Mastercard", "NVDA": "Nvidia", "MSFT": "Microsoft", "AVGO": "Broadcom", "IBM": "IBM", "UBER": "Uber", "SHOP": "Shopify", "ADBE": "Adobe", "PFE": "Pfizer", "NVO": "Novo Nordisk", "HOOD": "Robinhood", "PYPL": "PayPal", "PLTR": "Palantir", "NFLX": "Netflix", "BABA": "Alibaba", "MCD": "McDonald's", "V": "Visa", "TM": "Toyota Motor", "SAP": "SAP", "BKNG": "Booking Holdings", "DELL": "Dell Technologies", "APP": "AppLovin", "GEV": "GE Vernova", "MELI": "MercadoLibre", "ISRG": "Intuitive Surgical", "SOFI": "SoFi Technologies", "RIVN": "Rivian", "DUOL": "Duolingo", "ZETA": "Zeta Global", "MDB": "MongoDB", "CHTR": "Charter Communications", "SNDK": "Sandisk", "TTD": "The Trade Desk", "APLD": "Applied Digital", "VRT": "Vertiv", "TMUS": "T-Mobile US", "PCOR": "Procore", "CIFR": "Cipher Mining", "INTU": "Intuit", "SNPS": "Synopsys", "VEEV": "Veeva Systems", "KVYO": "Klaviyo", "VNET": "VNET Group", "TEAM": "Atlassian", "CTSH": "Cognizant", "CMCSA": "Comcast", "GLW": "Corning", "CLSK": "CleanSpark", "QUBT": "Quantum Computing", "IREN": "IREN", "SNAP": "Snap", "WULF": "TeraWulf", "NOW": "ServiceNow", "ACN": "Accenture", "CORZ": "Core Scientific", "BTDR": "Bitdeer", "BIDU": "Baidu", "HPQ": "HP", "QBTS": "D-Wave Quantum", "INOD": "Innodata", "U": "Unity Software", "ADSK": "Autodesk", "TRMB": "Trimble", "ALIT": "Alight", "EPAM": "EPAM Systems", "DSP": "Viant Technology", "UPWK": "Upwork", "OLED": "Universal Display", "CALX": "Calix", "VIV": "Telefônica Brasil", "AD": "Array Digital Infrastructure", "CCOI": "Cogent Communications", "NEM": "Nemetschek", "PRX": "Prosus", "1810": "Xiaomi", "LBTYA": "Liberty Global", "PDD": "PDD Holdings", "JD": "JD.com", "CPNG": "Coupang", "SE": "Sea Limited", "LULU": "Lululemon", "ONON": "On Holding", "CPRI": "Capri Holdings", "ADS": "Adidas", "DKS": "Dick's Sporting Goods", "EL|NYSE": "Estée Lauder", "EL|EURONEXT": "EssilorLuxottica", "TSCO": "Tractor Supply", "AZO": "AutoZone", "ACI": "Albertsons", "POOL": "Pool Corp", "FDR": "Fluidra", "DPZ": "Domino's Pizza", "CELH": "Celsius", "GIS": "General Mills", "CPB": "Campbell's", "MKC": "McCormick", "DOLE": "Dole", "AAK": "AAK", "TTWO": "Take-Two Interactive", "PSKY": "Paramount Skydance", "EVD": "CTS Eventim", "BRSL": "Brightstar Lottery", "DASH": "DoorDash", "GRAB": "Grab", "UAL": "United Airlines", "TZOO": "Travelzoo", "LINC": "Lincoln Educational", "BMW": "BMW", "MBG": "Mercedes-Benz", "VOW3": "Volkswagen", "P911": "Porsche AG", "STLAM": "Stellantis", "RNO": "Renault", "LCID": "Lucid", "NIO": "NIO", "XPEV": "XPeng", "LI": "Li Auto", "WRD": "WeRide", "PONY": "Pony AI", "APTV": "Aptiv", "AMV0": "Aumovio", "STM": "Stabilus", "HTZ": "Hertz", "CPRT": "Copart", "OTIS": "Otis Worldwide", "XYL": "Xylem", "ROL": "Rollins", "KGX": "Kion", "SYM": "Symbotic", "JBTM": "JBT Marel", "DUE": "Dürr", "ALG": "Alamo Group", "VOS": "Vossloh", "GXO": "GXO Logistics", "QXO": "QXO", "SITE": "SiteOne Landscape Supply", "REZI": "Resideo", "RBA": "RB Global", "FMC": "FMC Corp", "STN": "Stantec", "DY": "Dycom", "LMB": "Limbach", "WBD": "Webuild", "DOM": "Global Dominion", "HEI": "Heidelberg Materials", "BZU": "Buzzi", "LEN": "Lennar", "AXON": "Axon Enterprise", "LDOS": "Leidos", "AMTM": "Amentum", "KTOS": "Kratos Defense", "AVAV": "AeroVironment", "RCAT": "Red Cat", "ONDS": "Ondas", "ASTS": "AST SpaceMobile", "LUNR": "Intuitive Machines", "FLY": "Firefly Aerospace", "YSS": "York Space Systems", "JOBY": "Joby Aviation", "EH": "EHang", "CEG": "Constellation Energy", "VST": "Vistra", "NRG": "NRG Energy", "BWXT": "BWX Technologies", "OKLO": "Oklo", "SMR": "NuScale Power", "NNE": "Nano Nuclear Energy", "XE": "X-Energy", "BE": "Bloom Energy", "EOSE": "Eos Energy", "AMPX": "Amprius", "AMSC": "American Superconductor", "RUN": "Sunrun", "ASTI": "Ascent Solar", "MWH": "SOLV Energy", "FRMI": "Fermi", "EOG": "EOG Resources", "FANG": "Diamondback Energy", "DVN": "Devon Energy", "PR": "Permian Resources", "EXE": "Expand Energy", "AR": "Antero Resources", "CRK": "Comstock Resources", "MP": "MP Materials", "USAR": "USA Rare Earth", "UUUU": "Energy Fuels", "UAMY": "United States Antimony", "TMC": "The Metals Company", "NB": "NioCorp", "IPX": "IperionX", "CTGO": "Contango Silver & Gold", "NG": "NovaGold Resources", "ABT": "Abbott", "MDT": "Medtronic", "BSX": "Boston Scientific", "SYK": "Stryker", "BDX": "Becton Dickinson", "DHR": "Danaher", "GEHC": "GE HealthCare", "SHL": "Siemens Healthineers", "PODD": "Insulet", "IRTC": "iRhythm", "ATEC": "Alphatec", "AORT": "Artivion", "XRAY": "Dentsply Sirona", "OMCL": "Omnicell", "DYVOX": "Dynavox", "TEM": "Tempus AI", "GILD": "Gilead Sciences", "BMRN": "BioMarin", "BHC": "Bausch Health", "ZTS": "Zoetis", "BNTX": "BioNTech", "CRSP": "CRISPR Therapeutics", "NTLA": "Intellia Therapeutics", "SMMT": "Summit Therapeutics", "VIR": "Vir Biotechnology", "ARCT": "Arcturus Therapeutics", "ARDX": "Ardelyx", "ABCL": "AbCellera", "RLAY": "Relay Therapeutics", "EYPT": "EyePoint", "MDWD": "MediWound", "NNVC": "NanoViricides", "TRAW": "Traws Pharma", "CI": "Cigna", "HCA": "HCA Healthcare", "UHS": "Universal Health Services", "FIE": "Fielmann", "SCHW": "Charles Schwab", "HDB": "HDFC Bank", "EVR": "Evercore", "PAX": "Patria Investments", "EXO": "Exor", "OTF": "Blue Owl Technology Finance", "ADYEN": "Adyen", "FISV": "Fiserv", "FIS": "Fidelity National Information Services", "BR": "Broadridge", "FICO": "Fair Isaac", "AFRM": "Affirm", "PGY": "Pagaya", "KSPI": "Kaspi.kz", "STNE": "StoneCo", "PAGS": "PagSeguro", "VNA": "Vonovia", "LEG": "LEG Immobilien", "MFA": "MFA Financial", "RKT": "Rocket Companies", "OPEN": "Opendoor", "ZG": "Zillow", "CSGP": "CoStar Group", "G24": "Scout24", "HYQ": "Hypoport", "BULL": "BULL", "RMS": "RMS"}, XU=["https://www.tradingview.com/news/DJN_DN20261008005884:0/", "https://www.tradingview.com/news/dpa_afx:6332ac61ad14a:0/", "https://www.trivano.com/aandeel/advies-jp-morgan-prosus.20898-102919.advies", "https://www.trivano.com/aandeel/advies-goldman-sachs-prosus.20898-88872.advies", "https://www.trivano.com/aandeel/prosus.20898-185.beleggingsadvies", "https://www.tradingview.com/news/DJN_DN20260909000880_20260909000880:0/", "https://www.tradingview.com/news/DJN_DN20261020003427_20261020003427:0/", "https://www.tradingview.com/news/dpa_afx:52849e918da87:0/", "https://www.tradingview.com/news/dpa_afx:843306ef2d2bd:0/", "https://www.tradingview.com/news/dpa_afx:f8a300bca9baf:0/", "https://www.tradingview.com/news/dpa_afx:5bb029f76412e:0/", "https://www.optionfinance.fr/info-financiere-en-continu/d/2026-09-30-citi-rejoint-le-mouvement-et-abaisse-sa-cible-sur-hermes.html", "https://www.tradingview.com/news/dpa_afx:0dc5314fcc2bf:0/", "https://www.tradingview.com/news/dpa_afx:664d9642cd351:0/", "https://www.tradingview.com/news/dpa_afx:2427627a89699:0/", "https://www.davy.ie/research/public/article.htm?id=ST2_94199_1.xml.htm", "https://www.finanznachrichten.de/nachrichten-2026-10/69867918-jpmorgan-stuft-stellantis-auf-neutral-322.htm", "https://finanza.economia-italia.com/azioni-stellantis-16-ottobre-2026", "https://goldesel.de/aktien/news/stellantis-aktie-rbc-senkt-kursziel-auf-4-euro-rating-bleibt-neutral", "https://www.tradingview.com/news/DJN_DN20260804001423_20260804001424:0/", "https://goldesel.de/aktien/news/renault-aktie-jefferies-und-deutsche-bank-senken-kursziele-auf-30-euro", "https://www.tradingview.com/news/dpa_afx:5cf67245e466b:0/", "https://www.tradingview.com/news/dpa_afx:a62a199af4c30:0/", "https://www.tradingview.com/news/dpa_afx:9b7e9ce8c2c10:0/", "https://www.tradingview.com/news/dpa_afx:1da71de1250bf:0/", "https://www.tradingview.com/news/DJN_DN20260827011723_20260827011723:0/", "https://www.tradingview.com/news/DJN_DN20261019000359_20261019000359:0/", "https://www.tradingview.com/news/dpa_afx:beddaff60e5b0:0/", "https://www.tradingview.com/news/dpa_afx:37445e1b20e70:0/", "https://www.tradingview.com/news/dpa_afx:62339248df205:0/", "https://www.tradingview.com/news/dpa_afx:f97ee3e61d287:0/", "https://www.tradingview.com/news/dpa_afx:4095b5ab7e761:0/", "https://www.tradingview.com/news/DJN_DN20260814006674:0/", "https://www.tradingview.com/news/DJN_DN20260814006663:0/", "https://www.tradingview.com/news/dpa_afx:86f4200453394:0/", "https://www.tradingview.com/news/DJN_DN20260908000302_20260908000318:0/", "https://www.tradingview.com/news/dpa_afx:f1e5a4eec4855:0/", "https://www.tradingview.com/news/dpa_afx:d672e3a39fd06:0/", "https://www.tradingview.com/news/dpa_afx:c142dad6837a0:0/", "https://www.boerse.de/nachrichten/JPMORGAN-Vonovia-buy/38677685", "https://www.tradingview.com/news/dpa_afx:c52e19eb77d47:0/", "https://goldesel.de/aktien/news/vonovia-aktie-oddo-bhf-und-goldman-senken-kursziele-trotz-erholung", "https://www.boerse.de/nachrichten/JEFFERIES-LEG-Immobilien-buy/38669845", "https://goldesel.de/aktien/news/leg-immobilien-aktie-goldman-senkt-kursziel-auf-4430-euro-und-bleibt-neutral"];
+  var MBX={NYSE:"NYSE",NASDAQ:"NASDAQ",AMEX:"NYSEAMERICAN",TSX:"NYSE"};
+  function srcLinks(o,s){
+    var conv=/c$/.test(s); if(conv) s=s.slice(0,-1);
+    var out=[], m=s.match(/X(\d+)/); if(m){ var u=XU[+m[1]]||""; if(/^https:\/\//.test(u)) out.push('<a href="'+esc(u)+'" target="_blank" rel="noopener">depesza</a>'); s=s.replace(/X\d+/,""); }
+    var hasX=!!m;
+    s.split("").forEach(function(c){
+      if(c==="M"&&MBX[o.ex]) out.push('<a href="https://www.marketbeat.com/stocks/'+MBX[o.ex]+'/'+o.t+'/forecast/" target="_blank" rel="noopener">MarketBeat</a>');
+      else if(c==="S") out.push('<a href="https://stockanalysis.com/stocks/'+o.t.toLowerCase()+'/ratings/" target="_blank" rel="noopener">StockAnalysis</a>');
+      else if(c==="T") out.push('<a href="https://www.tipranks.com/stocks/'+o.t.toLowerCase()+'/forecast" target="_blank" rel="noopener">TipRanks</a>');
+      else if(c==="E"&&!hasX) out.push('<span class="mut" title="Depesze dpa-AFX i Dow Jones z kanału wiadomości TradingView.">depesze</span>');
+      else if(c==="W"&&!hasX) out.push('<span class="mut" title="Znalezione wyszukiwarką. Brak stałego adresu wpisu.">wyszukiwarka</span>');
+    });
+    return {h:out.join(" · ")||'<span class="mut">–</span>',conv:conv};
+  }
+  var rows=document.getElementById("raw").textContent.trim().split("\n").map(function(l){
+    var p=l.split(",");
+    var o={t:p[0],ex:p[1],sec:p[2],cur:p[3],price:num(p[4]),n:+p[5]||0,nAct:num(p[6]),t3:+p[7]||0,t2:+p[8]||0,t1:+p[9]||0,nPT:num(p[10]),
+      avg:num(p[11]),wpt:num(p[12]),lo:num(p[13]),hi:num(p[14]),tr:num(p[15]),nUp:+p[16]||0,nDn:+p[17]||0,nB:+p[18]||0,nH:+p[19]||0,nS:+p[20]||0,
+      cov:num(p[21]),r:num(p[22]),score:num(p[23]),w90:p[24]==="1",tv:num(p[25]),chg:num(p[26]),nChg:+p[27]||0,q:num(p[28]),stars:num(p[29]),dsc:num(p[30]),tvN:num(p[31]),det:p.slice(32).join(",")};
+    o.name=NAMES[o.t+"|"+o.ex]||NAMES[o.t]||"";
+    o.up=o.avg&&o.price?o.avg/o.price-1:null;
+    o.wup=o.wpt&&o.price?o.wpt/o.price-1:null;
+    o.tvup=o.tv&&o.price?o.tv/o.price-1:null;
+    if(!o.n) o.q=null;
+    o.trc=o.tr==null?"":o.tr>15?"u":o.tr<-15?"d":"s";
+    return o;
+  });
+  var fmt=function(x,d){ if(x==null) return "–"; var a=Math.abs(x); var dd=d!=null?d:(a>=1000?0:a>=100?1:2); return x.toLocaleString("pl-PL",{minimumFractionDigits:dd,maximumFractionDigits:dd}); };
+  var pct=function(x){ if(x==null) return "–"; return (x>0?"+":"")+Math.round(x*100)+"%"; };
+  var pct1=function(x){ if(x==null) return "–"; return (x>0?"+":"")+x.toLocaleString("pl-PL",{minimumFractionDigits:1,maximumFractionDigits:1})+"%"; };
+  var esc=function(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})};
+
+  var ZM={"od": "2026-10-03", "do": "2026-10-20", "wGore": [["NYSE:SCHW", 72, 56], ["NYSE:ZETA", 72, 25], ["NASDAQ:COIN", 74, 23], ["NYSE:VRT", 79, 22], ["NYSE:BE", 79, 22], ["NYSE:GLW", 77, 20], ["NASDAQ:DPZ", 57, 19], ["NASDAQ:AMZN", 76, 17]], "wDol": [["NASDAQ:OLED", 9, -45], ["NYSE:SMR", 16, -40], ["NASDAQ:CCOI", 26, -39], ["NYSE:BDX", 27, -38], ["NASDAQ:QBTS", 46, -35], ["NASDAQ:TRMB", 30, -34], ["NASDAQ:EYPT", 33, -32], ["NASDAQ:PONY", 43, -30]], "nowe": ["NASDAQ:BULL", "EURONEXT:RMS"], "usuniete": ["NASDAQ:PSKY"], "podwyzki": [["NASDAQ:TSLA", "Barclays", "Negative ➝ Outperform", "2026-10-19"], ["NYSE:CPRI", "Raymond James", "Outperform ➝ Strong-Buy", "2026-10-16"], ["NYSE:ZETA", "Goldman Sachs", "Neutral ➝ Buy", "2026-10-16"], ["NYSE:SCHW", "Evercore", "Underperform ➝ Hold", "2026-10-15"], ["NYSE:DVN", "Scotiabank", "Sector Perform ➝ Sector Outperform", "2026-10-14"], ["NYSE:GXO", "Goldman Sachs", "Buy", "2026-10-14"], ["NASDAQ:ASTS", "Deutsche Bank", "Buy", "2026-10-12"], ["NASDAQ:BMRN", "Raymond James", "Outperform ➝ Strong-Buy", "2026-10-12"], ["NASDAQ:SOFI", "Benchmark", "Strong-Buy", "2026-10-12"], ["NASDAQ:SOFI", "Stonex", "Buy", "2026-10-12"], ["NASDAQ:TMUS", "Raymond James", "Buy", "2026-10-12"], ["NYSE:CRM", "Bank of America", "Buy", "2026-10-12"], ["NASDAQ:BULL", "Scotiabank", "Sector Perform ➝ Sector Outperform", "2026-10-09"], ["NASDAQ:SPCX", "Barclays", "Underweight ➝ Overweight", "2026-10-09"]], "obnizki": [["NASDAQ:AAPL", "Loop Capital", "Hold", "2026-10-20"], ["NYSE:SMR", "Barclays", "Equal Weight ➝ Underweight", "2026-10-20"], ["NASDAQ:KTOS", "Jefferies", "Buy ➝ Negative", "2026-10-19"], ["NASDAQ:POOL", "Longbow", "Buy ➝ Neutral", "2026-10-19"], ["NYSE:KVYO", "Goldman Sachs", "Buy ➝ Neutral", "2026-10-16"], ["NYSE:ZTS", "Goldman Sachs", "Buy ➝ Neutral", "2026-10-16"], ["NASDAQ:CRSP", "UBS", "Buy ➝ Neutral", "2026-10-15"], ["NASDAQ:PYPL", "Bank of America", "Sell", "2026-10-15"], ["NASDAQ:DPZ", "Gordon Haskett", "Strong-Buy ➝ Hold", "2026-10-14"], ["NYSE:DELL", "Barclays", "Overweight ➝ Equal Weight", "2026-10-14"], ["NASDAQ:ADBE", "HSBC", "Buy ➝ Hold", "2026-10-13"], ["NASDAQ:ASTS", "Piper Sandler", "Hold", "2026-10-13"], ["NASDAQ:NFLX", "Huber", "Sell", "2026-10-13"], ["NASDAQ:ADBE", "Wells Fargo", "Overweight ➝ Underweight", "2026-10-12"]], "celeWGore": 167, "celeWDol": 216, "rekomendacji": 775}, META={"dzis": "2026-10-20", "okno60": "2026-08-21", "okno90": "2026-07-22", "spolek": 241, "zOcena": 241, "aktualizacja": "2026-10-21 00:09", "kurs_cad": 1.40479, "poprzednia": "2026-10-03"};
+  function zmiany(){
+    var box=document.getElementById("zm"); if(!ZM||!ZM.od) return;
+    var key=function(k){var p=k.split(":");return {t:p[1],ex:p[0]}};
+    var btn=function(k){var o=key(k);return '<button type="button" data-q="'+esc(o.t)+'">'+esc(o.t)+'</button>'};
+    var dd=function(s){return s?s.slice(8,10)+"."+s.slice(5,7):""};
+    var list=function(a,f){return a&&a.length?'<ul>'+a.map(f).join("")+'</ul>':'<p>Brak.</p>'};
+    var mv=function(x){return '<li>'+btn(x[0])+'<span>'+x[1]+' pkt ('+(x[2]>0?"+":"−")+Math.abs(x[2])+')</span></li>'};
+    var rc=function(x){var r=x[2]?x[2].split(/➝|→|->| to /).pop().trim():'';var t=dd(x[3])+' · '+x[1]+(r?' · '+r:'');return '<li>'+btn(x[0])+'<span title="'+esc(t)+'">'+esc(t)+'</span></li>'};
+    var h='<div class="zh"><h2>Zmiany od '+dd(ZM.od)+'.'+ZM.od.slice(0,4)+'</h2><span>'+(ZM.rekomendacji||0)+' nowych rekomendacji: '+(ZM.celeWGore||0)+' podwyżek i '+(ZM.celeWDol||0)+' obniżek ceny docelowej.'+
+      (ZM.nowe&&ZM.nowe.length?' Nowe na liście: '+ZM.nowe.map(function(k){return key(k).t}).join(", ")+'.':'')+(ZM.usuniete&&ZM.usuniete.length?' Usunięte: '+ZM.usuniete.map(function(k){return key(k).t}).join(", ")+'.':'')+'</span></div>';
+    h+='<div class="zc"><h3>Ocena w górę</h3>'+list(ZM.wGore,mv)+'</div><div class="zc"><h3>Ocena w dół</h3>'+list(ZM.wDol,mv)+'</div>';
+    h+='<div class="zc"><h3>Podwyższone rekomendacje</h3>'+list(ZM.podwyzki,rc)+'</div><div class="zc"><h3>Obniżone rekomendacje</h3>'+list(ZM.obnizki,rc)+'</div>';
+    box.innerHTML=h;
+    box.addEventListener("click",function(e){var b=e.target.closest("button[data-q]"); if(!b) return; var q=document.getElementById("q"); q.value=b.dataset.q; state.q=b.dataset.q.toUpperCase(); state.sec=""; render(); document.querySelector(".tablebox").scrollIntoView({behavior:"smooth",block:"start"});});
+  }
+  var COLS=[["rank","#",null],["t","Ticker","t"],["price","Kurs","price"],["avg","Śr. cena docelowa","avg"],["up","Potencjał","up"],["n","Liczba domów","n"],["q","Jakość","q"],["tr","Trend i zmiana","tr"],["tvup","Konsensus TV","tvup"],["score","Ocena","score"],["dsc","Zmiana","dsc"]];
+  var state={sort:"score",dir:-1,sec:"",q:"",minn:0,tr:"",open:{}};
+  try{var s=JSON.parse(localStorage.getItem("radar-buy")||"{}"); if(s.sort){state.sort=s.sort;state.dir=s.dir;} if(s.sec!=null) state.sec=s.sec;}catch(e){}
+  var save=function(){try{localStorage.setItem("radar-buy",JSON.stringify({sort:state.sort,dir:state.dir,sec:state.sec}))}catch(e){}};
+
+  var hrow=document.getElementById("hrow");
+  COLS.forEach(function(c){ var th=document.createElement("th"); if(c[2]){ var b=document.createElement("button"); b.type="button"; b.textContent=c[1]; b.dataset.k=c[2]; b.addEventListener("click",function(){ if(state.sort===c[2]) state.dir=-state.dir; else {state.sort=c[2];state.dir=c[2]==="t"?1:-1;} save(); render(); }); th.appendChild(b);} else {th.innerHTML='<span style="display:block;padding:9px 10px">'+c[1]+'</span>';} hrow.appendChild(th); });
+
+  var chips=document.getElementById("chips");
+  [["","Wszystkie"]].concat(Object.keys(SEC).map(function(k){return [k,SEC[k]]})).forEach(function(c){ var b=document.createElement("button"); b.type="button"; b.className="chip"; b.textContent=c[1]; b.dataset.s=c[0]; b.addEventListener("click",function(){state.sec=c[0];save();render();}); chips.appendChild(b); });
+  document.getElementById("q").addEventListener("input",function(e){state.q=e.target.value.trim().toUpperCase();render();});
+  document.getElementById("minn").addEventListener("change",function(e){state.minn=+e.target.value;render();});
+  document.getElementById("tr").addEventListener("change",function(e){state.tr=e.target.value;render();});
+
+  var scored=rows.filter(function(o){return o.score!=null});
+  var med=function(a){a=a.slice().sort(function(x,y){return x-y});return a.length?a[Math.floor(a.length/2)]:null};
+  var st=document.getElementById("stats");
+  var stat=function(v,l){return '<div class="stat"><b>'+v+'</b><span>'+l+'</span></div>'};
+  st.innerHTML=stat(scored.length+" / "+rows.length,"spółek z rekomendacją")+stat(pct(med(scored.filter(function(o){return o.up!=null}).map(function(o){return o.up}))),"mediana potencjału")+stat(scored.filter(function(o){return o.trc==="u"}).length+" ↑ / "+scored.filter(function(o){return o.trc==="d"}).length+" ↓","trend rosnący i spadający")+stat(scored.reduce(function(a,o){return a+o.n},0).toLocaleString("pl-PL"),"stanowisk domów maklerskich");
+
+  var RL={B:"Kupuj",H:"Trzymaj",S:"Sprzedaj","":"–"}, DL={u:"▲ podwyżka",d:"▼ obniżka",r:"bez zmian"};
+  function detail(o){
+    var recs=o.det?o.det.split(";").map(function(d){var p=d.split("/");var sl=srcLinks(o,p[5]||"");return '<span class="mut">'+p[0].slice(2)+"."+p[0].slice(0,2)+'</span><span>'+esc(p[1])+(p[6]?' <span class="mut" title="Gwiazdki trafności">'+String(p[6]).replace(".",",")+'★</span>':'')+'</span><span class="'+(p[2]==="B"?"pos":p[2]==="S"?"neg":"mut")+'">'+RL[p[2]||""]+'</span><span>'+(p[3]?fmt(+p[3])+(sl.conv?'<span class="mut" title="Przeliczone z USD po kursie 1,405"> ≈</span>':''):"–")+'</span><span class="'+(p[4]==="u"?"pos":p[4]==="d"?"neg":"mut")+'">'+DL[p[4]]+'</span><span>'+sl.h+'</span>'}).join(""):"";
+    var cov=(o.cov||0)/100, upC=o.wup==null?0.25:Math.max(0,Math.min(1,(o.wup+0.2)/0.8)), rr=o.r==null?0.5:(o.r/100+1)/2;
+    var cU=35*upC*(0.4+0.6*cov), cR=20*rr*(0.5+0.5*cov), cT=20*((o.tr||0)/100+1)/2, cC=25*cov;
+    return '<div class="dgrid"><div><h3>Najważniejsze domy w oknie ('+Math.min(6,o.n)+' z '+o.n+')</h3><div class="recs">'+recs+'</div>'+
+      '<p class="note">Zakres cen docelowych: '+fmt(o.lo)+' do '+fmt(o.hi)+' '+o.cur+'. Cen docelowych: '+(o.nPT||0)+'. Zdarzeń w oknie: '+(o.nAct||0)+', w tym '+o.nUp+' w górę i '+o.nDn+' w dół.'+(o.chg!=null&&o.nChg?' Średnia zmiana ceny docelowej: '+pct1(o.chg)+' (z '+o.nChg+' zmian).':'')+(o.stars!=null?' Średnia trafność: '+String(o.stars).replace(".",",")+'★.':'')+(o.cur==="CAD"?' Znak ≈ oznacza cenę przeliczoną z USD po kursie 1,405.':'')+(o.w90?' Brak ceny docelowej w 60 dniach, użyto okna do 90 dni.':'')+'</p></div>'+
+      '<div><h3>Rozbicie oceny</h3><div class="parts"><span>Potencjał ważony jakością ('+pct(o.wup)+')</span><b>'+cU.toFixed(1)+' / 35</b><span>Rekomendacje ('+o.nB+' kupuj, '+o.nH+' trzymaj, '+o.nS+' sprzedaj)</span><b>'+cR.toFixed(1)+' / 20</b><span>Trend</span><b>'+cT.toFixed(1)+' / 20</b><span>Liczba i jakość ('+o.t3+' dużych, '+o.t2+' średnich, '+o.t1+' małych)</span><b>'+cC.toFixed(1)+' / 25</b><span><b>Razem</b></span><b>'+o.score+' / 100</b></div>'+
+      '<p class="note">Konsensus TradingView z 12 miesięcy: '+fmt(o.tv)+' '+o.cur+' ('+pct(o.tvup)+').'+(o.tvN?' Pokrycie: '+o.n+' z '+o.tvN+' analityków, których liczy TradingView.':'')+(o.dsc!=null?' Zmiana oceny od poprzedniej aktualizacji: '+(o.dsc>0?'+':'')+o.dsc+'.':'')+'</p></div></div>';
+  }
+  function render(){
+    document.querySelectorAll("th button").forEach(function(b){ if(b.dataset.k===state.sort) b.setAttribute("aria-sort",state.dir<0?"descending":"ascending"); else b.removeAttribute("aria-sort"); });
+    document.querySelectorAll(".chip").forEach(function(b){b.setAttribute("aria-pressed",b.dataset.s===state.sec?"true":"false")});
+    var list=rows.filter(function(o){ return (!state.sec||o.sec===state.sec)&&(!state.q||o.t.indexOf(state.q)===0||o.name.toUpperCase().indexOf(state.q)>=0)&&o.n>=state.minn&&(!state.tr||o.trc===state.tr); });
+    var k=state.sort,d=state.dir;
+    list.sort(function(a,b){ var x=a[k],y=b[k]; if(x==null&&y==null) return a.t<b.t?-1:1; if(x==null) return 1; if(y==null) return -1; if(x<y) return -d; if(x>y) return d; return a.t<b.t?-1:1; });
+    document.getElementById("count").textContent=list.length+" spółek";
+    var h="";
+    list.forEach(function(o,i){
+      var none=o.score==null;
+      var sc=none?"n":o.score>=70?"a":o.score>=50?"b":"c";
+      var upw=o.up==null?0:Math.max(0,Math.min(1,Math.abs(o.up)/0.8))*100;
+      var tot=o.nB+o.nH+o.nS||1;
+      var tiers=""; for(var j=0;j<Math.min(o.t3,5);j++) tiers+='<i class="t3"></i>'; for(j=0;j<Math.min(o.t2,3);j++) tiers+='<i class="t2"></i>'; for(j=0;j<Math.min(o.t1,2);j++) tiers+='<i class="t1"></i>';
+      var trl=o.trc==="u"?"▲ rośnie":o.trc==="d"?"▼ spada":"● stabilny";
+      h+='<tr class="row" tabindex="0" data-t="'+o.t+'|'+o.ex+'" aria-expanded="'+(state.open[o.t+o.ex]?"true":"false")+'">'+
+        '<td class="rank">'+(i+1)+'</td>'+
+        '<td><span class="tk">'+o.t+(o.w90?'<span class="flag" title="Brak ceny docelowej w 60 dniach, użyto okna do 90 dni">90 dni</span>':'')+'<small class="nm">'+esc(o.name)+'</small><small>'+SEC[o.sec]+' · '+o.ex+'</small></span></td>'+
+        '<td>'+fmt(o.price,o.price<1?4:2)+'<span class="cur">'+o.cur+'</span></td>'+
+        '<td>'+(none||o.avg==null?'<span class="mut">–</span>':fmt(o.avg))+'</td>'+
+        '<td>'+(o.up==null?'<span class="mut">–</span>':'<span class="up"><span class="'+(o.up>=0?"pos":"neg")+'">'+pct(o.up)+'</span><span class="meter"><i class="'+(o.up<0?"neg":"")+'" style="width:'+upw+'%"></i></span></span>')+'</td>'+
+        '<td>'+(none?'<span class="mut">brak</span>':o.n+'<span class="bhs" title="'+o.nB+' kupuj, '+o.nH+' trzymaj, '+o.nS+' sprzedaj"><i class="b" style="width:'+(100*o.nB/tot)+'%"></i><i class="h" style="width:'+(100*o.nH/tot)+'%"></i><i class="s" style="width:'+(100*o.nS/tot)+'%"></i></span>')+'</td>'+
+        '<td>'+(none?'<span class="mut">–</span>':o.q+'<span class="tier" title="'+o.t3+' dużych, '+o.t2+' średnich, '+o.t1+' małych">'+tiers+'</span>')+'</td>'+
+        '<td>'+(none?'<span class="mut">–</span>':'<span class="trend '+o.trc+'" title="'+o.nUp+' w górę, '+o.nDn+' w dół">'+trl+' <span style="font-weight:400">'+o.nUp+'/'+o.nDn+'</span></span>'+(o.chg!=null&&o.nChg?'<span class="chg '+(o.chg>0?"pos":o.chg<0?"neg":"mut")+'" title="Średnia zmiana ceny docelowej z '+o.nChg+' zmian">'+pct1(o.chg)+'</span>':'<span class="chg mut">–</span>'))+'</td>'+
+        '<td class="'+(o.tvup==null?"mut":o.tvup>=0?"pos":"neg")+'">'+pct(o.tvup)+'</td>'+
+        '<td><span class="score '+sc+'">'+(none?"–":o.score)+'</span></td>'+
+        '<td class="'+(o.dsc==null||o.dsc===0?"mut":o.dsc>0?"pos":"neg")+'">'+(o.dsc==null?"–":(o.dsc>0?"+":o.dsc<0?"−":"")+Math.abs(o.dsc))+'</td></tr>';
+      if(state.open[o.t+o.ex]&&!none) h+='<tr class="detail"><td colspan="11"><div class="dwrap">'+detail(o)+'</div></td></tr>';
+    });
+    document.getElementById("tb").innerHTML=h||'<tr><td colspan="11" class="empty">Żadna spółka nie spełnia filtrów. Zmień sekcję albo próg liczby domów.</td></tr>';
+  }
+  var tb=document.getElementById("tb");
+  var toggle=function(tr){ var k=tr.dataset.t.replace("|",""); state.open[k]=!state.open[k]; render(); };
+  tb.addEventListener("click",function(e){ var tr=e.target.closest("tr.row"); if(tr) toggle(tr); });
+  tb.addEventListener("keydown",function(e){ if((e.key==="Enter"||e.key===" ")&&e.target.matches("tr.row")){ e.preventDefault(); toggle(e.target); } });
+  render();
+  zmiany();
+})();
+</script>
+
+
+</body>
+</html>
